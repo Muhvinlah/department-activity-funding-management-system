@@ -1,12 +1,19 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
-export const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  const doubleCount = computed(() => count.value * 2)
-  function increment() {
-    count.value++
-  }
+import { login as loginService } from '../services/authService'
 
-  return { count, doubleCount, increment }
-})
+export const useAuthStore = defineStore('auth', {
+  state: () => ({
+    user: null,
+    token: null,
+  }),
+  actions: {
+    async login(credentials: { nim: number; password: string }) {
+      const data = await loginService(credentials);
+      this.user = data.user;
+      this.token = data.token;
+      // You can also save the token to localStorage here
+    },
+  },
+});

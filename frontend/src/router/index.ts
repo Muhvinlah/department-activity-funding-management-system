@@ -1,58 +1,52 @@
+// Updated router/index.ts (fixing your current version)
 import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
-import { useAuthStore } from '@/stores/counter';
 
-import MainLayout from '../layouts/MainLayout.vue';
+import { useAuthStore } from '@/stores/authStore';
+import { USER_ROLES, ADMIN_ROLES } from '@/constants/userRoles';
+import mainLayout from '@/layouts/mainLayout.vue';
 
-// Role Definitions
-const standardUser = ['lecturer', 'student'];
-const adminUser = ['headmaster', 'secretary', 'admin'];
-
-// Route Definitions
 const routes: Array<RouteRecordRaw> = [
-  // Login
   {
     path: '/login',
     component: () => import('../views/Login.vue'),
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false, guestOnly: true }
   },
-
-  // Main Application
   {
     path: '/app',
-    component: MainLayout,
+    component: mainLayout,
     meta: { requiresAuth: false },
     children: [
       {
         path: 'home',
         name: 'Home',
         component: () => import('../views/Home.vue'),
-        meta: { requiresAuth: false },
+        meta: { requiresAuth: false }
+      },
+      {
+        path: 'tor',
+        name: 'TOR',
+        component: () => import('../views/submitTOR.vue'),
+        meta: { requiresAuth: false }
+      },
+      {
+        path: 'lpj',
+        name: 'LPJ',
+        component: () => import('../views/submitLPJ.vue'),
+        meta: { requiresAuth: false }
       },
       {
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('../views/Dashboard.vue'),
-        meta: { requiresAuth: false},
-      },
-
-      // Standard User Routes
-      {
-        path: 'tor/submit',
-        name: 'SubmitTOR',
-        component: () => import('../views/SubmitTOR.vue'),
-        meta: { requiresAuth: false, roles: standardUser },
-      },
-      {
-        path: 'lpj/submit/:torId',
-        name: 'SubmitLPJ',
-        component: () => import('../views/SubmitLPJ.vue'),
-        meta: { requiresAuth: false, roles: standardUser },
+        meta: { requiresAuth: false }
       }
     ]
   },
-
-  // Not Found Route
+  {
+    path: '/',
+    redirect: '/login'
+  },
   {
     path: '/:catchAll(.*)',
     name: 'NotFound',
@@ -70,46 +64,32 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = !!authStore.token;
   const userRole = authStore.user?.role;
 
-  // If the user is already authenticated and attempts to open the guest-only routes,
-  // redirect them to the correct home based on role.
-  if (to.meta?.guestOnly && isAuthenticated) {
-    if (userRole && adminUser.includes(userRole)) {
-      if (to.name !== 'admin-home') return next({ name: 'admin-home' });
-      return next();
-    }
-    // redirect standard users to Home
-    if (to.name !== 'Home') return next({ name: 'Home' });
-    return next();
-  }
-
-  // Route requires authentication
+  // If route requires auth and user is not authenticated, redirect to login
   if (to.meta?.requiresAuth && !isAuthenticated) {
-    // navigate to the named Login route that exists
-    if (to.name !== 'Login') return next({ name: 'Login' });
-    return next();
+    return next({ name: 'Login' });
   }
 
-  // Route requires a specific role
+  // If user is authenticated and tries to access guest-only routes (like login)
+  if (to.meta?.guestOnly && isAuthenticated) {
+    // Redirect based on role
+    if (ADMIN_ROLES.includes(userRole)) {
+      return next({ name: 'Dashboard' });
+    }
+    return next({ name: 'Home' });
+  }
+
+  // Check role-based access
   if (to.meta?.roles && Array.isArray(to.meta.roles)) {
-    if (!userRole) {
-      // user has no role (not logged in) -> send to login
-      if (to.name !== 'Login') return next({ name: 'Login' });
-      return next();
-    }
-    if (!to.meta.roles.includes(userRole)) {
-      // User does not have the required role, redirect them appropriately
-      if (adminUser.includes(userRole)) {
-        if (to.name !== 'admin-home') return next({ name: 'admin-home' });
-        return next();
+    if (!userRole || !to.meta.roles.includes(userRole)) {
+      // User doesn't have required role
+      if (ADMIN_ROLES.includes(userRole)) {
+        return next({ name: 'Dashboard' });
       }
-      // default landing for standard users
-      if (to.name !== 'Home') return next({ name: 'Home' });
-      return next();
+      return next({ name: 'Home' });
     }
   }
 
-  // If all checks pass, proceed
-  return next();
+  next();
 });
 
 export default router;

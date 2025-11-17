@@ -15,7 +15,9 @@
     background-color: #f6f5f4;
   }
 
-  
+  /* .sort {
+
+  } */
 
   .shapedividers_com-478 {
     overflow:hidden;

@@ -1,11 +1,11 @@
 <template>
-    <div class="min-h-screen bg-gray-50 py-8">
-        <div class="max-w-6xl mx-auto">
+    <div class="min-h-screen py-8">
+        <div class="max-w-5xl mx-auto">
             <!-- Header -->
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
-                <div class="bg-[#0d7d90] text-white p-6">
+            <div class="rounded-2xl overflow-hidden mb-6">
+                <div class="bg-[#0d7d90] text-[#f6f5f4] p-6">
                     <h1 class="text-2xl font-bold text-center">Pengajuan Laporan Pertanggungjawaban (LPJ)</h1>
-                    <p class="text-center text-blue-100 mt-2">Berdasarkan TOR yang telah disetujui</p>
+                    <p class="text-center mt-2">Berdasarkan TOR yang telah disetujui</p>
                 </div>
             </div>
 

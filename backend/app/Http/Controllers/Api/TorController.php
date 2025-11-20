@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tor;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\TorStatusChanged;
 
 class TorController extends Controller
 {
@@ -173,8 +176,20 @@ class TorController extends Controller
                 ], 400);
             }
 
+            $oldStatus = $tor->status;
             $tor->update($request->all());
             $tor->addStatusHistory('updated', 'TOR updated', Auth::guard('api')->id());
+
+            // Send notification if status changed from needs_revision to draft
+            if ($oldStatus === 'needs_revision' && $tor->status === 'draft') {
+                $tor->user->notify(new TorStatusChanged(
+                    $tor, 
+                    $oldStatus, 
+                    'draft', 
+                    Auth::guard('api')->user()->name,
+                    'TOR has been revised and ready for resubmission'
+                ));
+            }
 
             return response()->json([
                 'success' => true,
@@ -236,6 +251,7 @@ class TorController extends Controller
     {
         try {
             $tor = Tor::findOrFail($id);
+            $oldStatus = $tor->status;
 
             // Check if user owns this TOR
             if ($tor->user_id !== Auth::guard('api')->id()) {
@@ -246,20 +262,44 @@ class TorController extends Controller
             }
 
             // Only allow submit if status is draft or needs_revision
-            if (!in_array($tor->status, ['draft', 'needs_revision'])) {
+            if (!in_array($oldStatus, ['draft', 'needs_revision'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot submit TOR in current status'
                 ], 400);
             }
 
+            // Update status and submit
+            $tor->update(['status' => 'submitted']);
             $tor->submit(Auth::guard('api')->id());
+            
+            // Send notification to creator
+            $tor->user->notify(new TorStatusChanged(
+                $tor, 
+                $oldStatus, 
+                'submitted', 
+                Auth::guard('api')->user()->name,
+                'TOR has been submitted for review'
+            ));
+            
+            // Notify secretaries
+            $secretaries = User::where('role', 'sekretaris')->get();
+            if ($secretaries->count() > 0) {
+                Notification::send($secretaries, new TorStatusChanged(
+                    $tor, 
+                    $oldStatus, 
+                    'submitted', 
+                    Auth::guard('api')->user()->name,
+                    'New TOR submitted for review'
+                ));
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'TOR submitted successfully',
                 'data' => $tor
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -289,6 +329,7 @@ class TorController extends Controller
         try {
             $tor = Tor::findOrFail($id);
             $user = Auth::guard('api')->user();
+            $oldStatus = $tor->status;
 
             // Check if user is secretary
             if (!$user->isSekretaris()) {
@@ -311,14 +352,38 @@ class TorController extends Controller
 
             if ($action === 'approved') {
                 $tor->approveBySecretary($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'reviewed_by_secretary';
                 $message = 'TOR reviewed by secretary';
+                
+                // Notify admins for verification
+                $admins = User::where('role', 'admin')->get();
+                if ($admins->count() > 0) {
+                    Notification::send($admins, new TorStatusChanged(
+                        $tor, 
+                        $oldStatus, 
+                        $newStatus, 
+                        $user->name,
+                        'TOR needs admin verification'
+                    ));
+                }
             } elseif ($action === 'rejected') {
                 $tor->reject($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'rejected';
                 $message = 'TOR rejected by secretary';
             } else {
                 $tor->requestRevision($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'needs_revision';
                 $message = 'Revision requested by secretary';
             }
+
+            // Notify TOR creator about the status change
+            $tor->user->notify(new TorStatusChanged(
+                $tor, 
+                $oldStatus, 
+                $newStatus, 
+                $user->name,
+                $catatan ?: $message
+            ));
 
             return response()->json([
                 'success' => true,
@@ -354,6 +419,7 @@ class TorController extends Controller
         try {
             $tor = Tor::findOrFail($id);
             $user = Auth::guard('api')->user();
+            $oldStatus = $tor->status;
 
             // Check if user is admin
             if (!$user->isAdmin()) {
@@ -376,14 +442,38 @@ class TorController extends Controller
 
             if ($action === 'approved') {
                 $tor->verifyByAdmin($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'verified_by_admin';
                 $message = 'TOR verified by admin';
+                
+                // Notify department heads for final approval
+                $heads = User::where('role', 'kepala_jurusan')->get();
+                if ($heads->count() > 0) {
+                    Notification::send($heads, new TorStatusChanged(
+                        $tor, 
+                        $oldStatus, 
+                        $newStatus, 
+                        $user->name,
+                        'TOR needs final approval'
+                    ));
+                }
             } elseif ($action === 'rejected') {
                 $tor->reject($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'rejected';
                 $message = 'TOR rejected by admin';
             } else {
                 $tor->requestRevision($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'needs_revision';
                 $message = 'Revision requested by admin';
             }
+
+            // Notify TOR creator about the status change
+            $tor->user->notify(new TorStatusChanged(
+                $tor, 
+                $oldStatus, 
+                $newStatus, 
+                $user->name,
+                $catatan ?: $message
+            ));
 
             return response()->json([
                 'success' => true,
@@ -419,6 +509,7 @@ class TorController extends Controller
         try {
             $tor = Tor::findOrFail($id);
             $user = Auth::guard('api')->user();
+            $oldStatus = $tor->status;
 
             // Check if user is head
             if (!$user->isKetua()) {
@@ -441,14 +532,39 @@ class TorController extends Controller
 
             if ($action === 'approved') {
                 $tor->approveByHead($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'approved';
                 $message = 'TOR approved by department head';
+                
+                // Notify all involved parties about final approval
+                $involvedUsers = User::whereIn('role', ['admin', 'sekretaris'])
+                                    ->orWhere('id', $tor->user_id)
+                                    ->get();
+                
+                Notification::send($involvedUsers, new TorStatusChanged(
+                    $tor, 
+                    $oldStatus, 
+                    $newStatus, 
+                    $user->name,
+                    'TOR has been fully approved and ready for execution'
+                ));
             } elseif ($action === 'rejected') {
                 $tor->reject($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'rejected';
                 $message = 'TOR rejected by department head';
             } else {
                 $tor->requestRevision($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'needs_revision';
                 $message = 'Revision requested by department head';
             }
+
+            // Always notify TOR creator about the status change
+            $tor->user->notify(new TorStatusChanged(
+                $tor, 
+                $oldStatus, 
+                $newStatus, 
+                $user->name,
+                $catatan ?: $message
+            ));
 
             return response()->json([
                 'success' => true,

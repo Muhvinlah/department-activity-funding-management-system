@@ -6,10 +6,12 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements JWTSubject
 {
     use SoftDeletes;
+    use Notifiable;
 
     protected $table = 'users';
     protected $primaryKey = 'user_id';

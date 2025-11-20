@@ -50,3 +50,15 @@ Route::middleware('auth:api')->group(function () {
     Route::get('activity-categories', [ActivityCategoryController::class, 'index']);
     Route::get('activity-categories/{id}', [ActivityCategoryController::class, 'show']);
 });
+
+// Test route - remove in production
+Route::post('/test-notification', function () {
+    $user = App\Models\User::first();
+    $tor = App\Models\Tor::first();
+    
+    $user->notify(new App\Notifications\TorStatusChanged(
+        $tor, 'draft', 'submitted', 'Test User'
+    ));
+    
+    return response()->json(['message' => 'Notification sent!']);
+});

@@ -12,7 +12,7 @@
         <!-- Main Content -->
         <form @submit.prevent="handleSubmit" class="bg-[#0D7D90] rounded-2xl p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Left Column - TOR Information -->
-            <div class="lg:col-span-1 shadow-lg rounded-2xl">
+            <div class="lg:col-span-1 bg-[#008797]">
                 <div class="rounded-2xl p-6 sticky top-6">
                     <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4">Informasi TOR</h2>
 
@@ -26,7 +26,7 @@
                         v-model.number="form.tor_id"
                         @blur="validateField('tor_id')"
                         @change="validateField('tor_id')"
-                        class="w-full p-3 border border-[#F6F5F4] text-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
+                        class="w-full p-3 border border-[#F6F5F4] text-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
                     >
                         <option value="">-- Pilih TOR --</option>
                         <option 
@@ -86,7 +86,7 @@
                             id="actual_date"
                             type="date"
                             v-model="form.actual_date"
-                            class="w-full p-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
+                            class="w-full p-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
                             >
                         </div>
                         <div>
@@ -99,7 +99,7 @@
                             @blur="validateField('activity_result')"
                             rows="4"
                             placeholder="Jelaskan secara detail hasil yang dicapai dari kegiatan ini"
-                            class="w-full p-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
+                            class="w-full p-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
                             ></textarea>
                         </div>
                     </div>
@@ -113,7 +113,7 @@
                 
                 <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-[#03D26F]/75 p-4 rounded-xl">
+                    <div class="bg-[#008797] p-4 rounded-lg shadow-lg">
                         <h3 class="text-sm font-medium text-[#F6F5F4] mb-2">Anggaran Disetujui</h3>
                         <p class="text-lg font-bold text-[#F6F5F4]" v-if="selectedTor">
                         Rp {{ selectedTor.budget_submitted?.toLocaleString('id-ID') }}
@@ -136,13 +136,13 @@
                             type="number"
                             min="1"
                             placeholder="0"
-                            class="w-full pl-12 p-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
+                            class="w-full pl-12 p-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
                             >
                         </div>
                     </div>
                 </div>
 
-                <div v-if="selectedTor && form.budget_used" class="p-4 rounded-xl">
+                <div v-if="selectedTor && form.budget_used" class="p-4 rounded-lg shadow-lg bg-[#008797]">
                     <div class="flex justify-between items-center">
                         <span class="text-sm font-medium text-[#F6F5F4]">Selisih Anggaran:</span>
                         <span 
@@ -171,26 +171,16 @@
                             Foto Dokumentasi Kegiatan
                         </label>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- <FileUpload 
-                            label="Foto 1 (Utama)"
-                            @file-selected="handleFileUpload('foto_1', $event)"
-                            accept="image/*"
-                            />
-                            <FileUpload 
-                            label="Foto 2"
-                            @file-selected="handleFileUpload('foto_2', $event)"
-                            accept="image/*"
-                            />
-                            <FileUpload 
-                            label="Foto 3"
-                            @file-selected="handleFileUpload('foto_3', $event)"
-                            accept="image/*"
-                            />
-                            <FileUpload 
-                            label="Foto 4"
-                            @file-selected="handleFileUpload('foto_4', $event)"
-                            accept="image/*"
-                            /> -->
+                          <div>
+                            <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Foto Dokumentasi (maks 4)</label>
+                            <input type="file" accept="image/*" multiple @change="handleFileUpload('photos', $event)" class="w-full p-2 text-[#F6F5F4] bg-[#008797] rounded-lg" />
+                            <p v-if="attachments.photos && attachments.photos.length" class="mt-2 text-xs text-[#F6F5F4]">{{ attachments.photos.length }} file(s) dipilih</p>
+                          </div>
+                          <div>
+                            <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Foto Dokumentasi Tambahan (opsional)</label>
+                            <input type="file" accept="image/*" multiple @change="handleFileUpload('photos_additional', $event)" class="w-full p-2 text-[#F6F5F4] bg-[#008797] rounded-lg" />
+                            <p v-if="attachments.photos_additional && attachments.photos_additional.length" class="mt-2 text-xs text-[#F6F5F4]">{{ attachments.photos_additional.length }} file(s) dipilih</p>
+                          </div>
                         </div>
                     </div>
 
@@ -200,21 +190,21 @@
                             Dokumen Pendukung
                         </label>
                         <div class="space-y-4">
-                        <!-- <FileUpload 
-                        label="Daftar Hadir Peserta"
-                        @file-selected="handleFileUpload('daftar_hadir', $event)"
-                        accept=".pdf,.doc,.docx"
-                        />
-                        <FileUpload 
-                        label="Kwitansi & Bukti Pengeluaran"
-                        @file-selected="handleFileUpload('bukti_pengeluaran', $event)"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        />
-                        <FileUpload 
-                        label="Dokumen Pendukung Lainnya"
-                        @file-selected="handleFileUpload('dokumen_lainnya', $event)"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                        /> -->
+                        <div>
+                          <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Daftar Hadir Peserta</label>
+                          <input type="file" accept=".pdf,.doc,.docx" @change="handleFileUpload('daftar_hadir', $event)" class="w-full p-2 text-[#F6F5F4] bg-[#008797] rounded-lg" />
+                          <p v-if="attachments.daftar_hadir" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.daftar_hadir.name }}</p>
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Kwitansi & Bukti Pengeluaran</label>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileUpload('bukti_pengeluaran', $event)" class="w-full p-2 text-[#F6F5F4] bg-[#008797] rounded-lg" />
+                          <p v-if="attachments.bukti_pengeluaran" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.bukti_pengeluaran.name }}</p>
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Dokumen Pendukung Lainnya</label>
+                          <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="handleFileUpload('dokumen_lainnya', $event)" class="w-full p-2 text-[#F6F5F4] bg-[#008797] rounded-lg" />
+                          <p v-if="attachments.dokumen_lainnya" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.dokumen_lainnya.name }}</p>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -237,7 +227,7 @@
                         @blur="validateField('activity_evaluation')"
                         rows="4"
                         placeholder="Jelaskan evaluasi terhadap pelaksanaan kegiatan (keberhasilan, kendala, pembelajaran)"
-                        class="w-full p-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
+                        class="w-full p-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] focus:border-transparent"
                         ></textarea>
                     </div>
                 </div>
@@ -247,7 +237,7 @@
             <div class="flex justify-between space-x-5 pt-6 border-t">
                 <button 
                 type="submit"
-                class="px-8 py-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl hover:bg-[#03D26F]/75 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-8 py-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-lg hover:bg-[#03D26F] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <span v-if="!loading">Simpan Pengajuan LPJ</span>
                     <span v-else>Menyimpan...</span>
@@ -255,7 +245,7 @@
                 </button>
                 <router-link
                 to="/app/home"
-                class="flex-1 px-4 py-2 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl hover:bg-[#D80300]/75 hover:text-[#F6F5F4] text-center transition-colors"
+                class="flex-1 px-4 py-2 border border-[#F6F5F4] text-[#F6F5F4] rounded-lg hover:bg-[#D80300] hover:text-[#F6F5F4] text-center transition-colors"
                 >
                 Batal
                 </router-link>
@@ -287,6 +277,19 @@ const loading = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
 const approvedTors = ref<any[]>([]);
+const attachments = ref<{
+  photos: File[] | null;
+  photos_additional: File[] | null;
+  daftar_hadir: File | null;
+  bukti_pengeluaran: File | null;
+  dokumen_lainnya: File | null;
+}>({
+  photos: null,
+  photos_additional: null,
+  daftar_hadir: null,
+  bukti_pengeluaran: null,
+  dokumen_lainnya: null,
+});
 
 const selectedTor = computed(() => {
   return approvedTors.value.find((t) => t.tor_id === form.value.tor_id);
@@ -310,6 +313,10 @@ const validateField = (field: keyof LpjData) => {
   }
   if (field === 'budget_used' && (value as number) < 0) {
     errors.value[field] = ['Anggaran harus lebih besar dari atau sama dengan 0'];
+  }
+  // Ensure TOR is selected
+  if (field === 'tor_id' && !form.value.tor_id) {
+    errors.value[field] = ['Silakan pilih TOR yang disetujui'];
   }
 };
 
@@ -352,11 +359,49 @@ const handleSubmit = async () => {
     return;
   }
 
+  // Ensure selected TOR exists and is approved
+  if (!selectedTor.value) {
+    errorMessage.value = 'TOR yang dipilih tidak valid atau belum disetujui';
+    return;
+  }
+
   loading.value = true;
   successMessage.value = '';
   errorMessage.value = '';
 
-  const response = await lpjService.createLpj(form.value);
+  // If there are file attachments, submit as multipart/form-data
+  const hasFiles = (
+    (attachments.value.photos && attachments.value.photos.length > 0) ||
+    (attachments.value.photos_additional && attachments.value.photos_additional.length > 0) ||
+    !!attachments.value.daftar_hadir ||
+    !!attachments.value.bukti_pengeluaran ||
+    !!attachments.value.dokumen_lainnya
+  );
+
+  let response;
+  if (hasFiles) {
+    const formData = new FormData();
+    formData.append('tor_id', String(form.value.tor_id));
+    formData.append('activity_result', form.value.activity_result);
+    formData.append('activity_evaluation', form.value.activity_evaluation);
+    formData.append('actual_date', form.value.actual_date);
+    formData.append('budget_used', String(form.value.budget_used));
+
+    // photos (multiple)
+    if (attachments.value.photos && Array.isArray(attachments.value.photos)) {
+      (attachments.value.photos as File[]).forEach((f) => formData.append('photos[]', f));
+    }
+    if (attachments.value.photos_additional && Array.isArray(attachments.value.photos_additional)) {
+      (attachments.value.photos_additional as File[]).forEach((f) => formData.append('photos_additional[]', f));
+    }
+    if (attachments.value.daftar_hadir) formData.append('daftar_hadir', attachments.value.daftar_hadir as File);
+    if (attachments.value.bukti_pengeluaran) formData.append('bukti_pengeluaran', attachments.value.bukti_pengeluaran as File);
+    if (attachments.value.dokumen_lainnya) formData.append('dokumen_lainnya', attachments.value.dokumen_lainnya as File);
+
+    response = await lpjService.createLpjWithFiles(formData);
+  } else {
+    response = await lpjService.createLpj(form.value);
+  }
 
   loading.value = false;
 
@@ -372,6 +417,18 @@ const handleSubmit = async () => {
     } else {
       errorMessage.value = response.message || 'Terjadi kesalahan saat membuat LPJ';
     }
+  }
+};
+
+const handleFileUpload = (fieldName: string, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (!input || !input.files) return;
+  const key = fieldName as keyof typeof attachments.value;
+  if (input.multiple) {
+    const files = Array.from(input.files);
+    (attachments.value as any)[key] = files;
+  } else {
+    (attachments.value as any)[key] = input.files[0] ?? null;
   }
 };
 

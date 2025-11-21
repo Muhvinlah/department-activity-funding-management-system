@@ -159,11 +159,64 @@
               type="text"
               class="w-full px-4 py-2 bg-[#F6F5F4] border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50"
               :class="errors.pic ? 'border-[#D80300]' : 'border-[#F6F5F4]'"
-              placeholder="Nama PIC"
+              placeholder="Nama mahasiswa (Penanggung Jawab)"
             />
             <p v-if="errors.pic" class="mt-1 text-xs text-[#D80300]">
               {{ errors.pic[0] }}
             </p>
+          </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="border-t border-[#F6F5F4] pt-6">
+          <h3 class="text-lg font-semibold text-[#F6F5F4] mb-4">File Pendukung</h3>
+
+          <!-- RAB Upload -->
+          <div class="mb-4">
+            <label for="rab_file" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+              Rencana Anggaran Belanja (RAB) <span class="text-[#D80300]">*</span>
+            </label>
+            <input
+              id="rab_file"
+              type="file"
+              accept=".xlsx,.xls,.pdf"
+              @change="handleFileUpload('rab', $event)"
+              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg text-[#0D7D90] file:bg-[#03D26F] file:text-[#0D7D90] file:border-none file:px-3 file:py-1 file:rounded file:cursor-pointer"
+            />
+            <p class="mt-1 text-xs text-[#F6F5F4]">Format: XLSX, XLS, PDF (max 25MB)</p>
+            <p v-if="attachments.rab" class="mt-1 text-xs text-[#03D26F]">✓ {{ attachments.rab.name }}</p>
+          </div>
+
+          <!-- Supporting Documents -->
+          <div>
+            <label for="supporting_file" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+              Dokumen Pendukung Lainnya
+            </label>
+            <input
+              id="supporting_file"
+              type="file"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              @change="handleFileUpload('supporting', $event)"
+              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg text-[#0D7D90] file:bg-[#03D26F] file:text-[#0D7D90] file:border-none file:px-3 file:py-1 file:rounded file:cursor-pointer"
+            />
+            <p class="mt-1 text-xs text-[#F6F5F4]">Format: PDF, DOC, DOCX, JPG, PNG (max 25MB)</p>
+            <p v-if="attachments.supporting" class="mt-1 text-xs text-[#03D26F]">✓ {{ attachments.supporting.name }}</p>
+          </div>
+        </div>
+
+        <!-- Comments/Revision Notes Section -->
+        <div class="border-t border-[#F6F5F4] pt-6">
+          <h3 class="text-lg font-semibold text-[#F6F5F4] mb-4">Catatan Tambahan</h3>
+          <div>
+            <label for="comments" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+              Catatan/Keterangan (Opsional)
+            </label>
+            <textarea
+              id="comments"
+              v-model="comments"
+              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 h-20"
+              placeholder="Tambahkan catatan atau informasi penting lainnya"
+            ></textarea>
           </div>
         </div>
 
@@ -262,6 +315,11 @@ const successMessage = ref('');
 const errorMessage = ref('');
 const categories = ref<any[]>([]);
 const budgets = ref<any[]>([]);
+const attachments = ref<Record<string, File | null>>({
+  rab: null,
+  supporting: null,
+});
+const comments = ref('');
 
 const validateField = (field: keyof TorData) => {
   // Clear previous errors for this field
@@ -273,6 +331,9 @@ const validateField = (field: keyof TorData) => {
   if (field === 'activity_name' && !value) {
     errors.value[field] = ['Nama kegiatan harus diisi'];
   }
+  if (field === 'pic' && !value) {
+    errors.value[field] = ['PIC harus dipilih'];
+  }
   if (field === 'budget_submitted' && (value as number) < 0) {
     errors.value[field] = ['Anggaran harus lebih besar dari 0'];
   }
@@ -280,6 +341,13 @@ const validateField = (field: keyof TorData) => {
     if (new Date(form.value.start_date) > new Date(form.value.end_date)) {
       errors.value['end_date'] = ['Tanggal selesai harus setelah tanggal mulai'];
     }
+  }
+};
+
+const handleFileUpload = (fieldName: string, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files[0]) {
+    attachments.value[fieldName] = input.files[0];
   }
 };
 
@@ -334,14 +402,14 @@ onMounted(async () => {
     { budget_id: 2, year: '2026' },
   ];
     
-    // Auto-select tahun anggaran based on start_date
-    watch(() => form.value.start_date, (newDate) => {
-      if (!newDate) return;
-      const year = newDate.split('-')[0];
-      const match = budgets.value.find(b => String(b.year) === year);
-      if (match) {
-        form.value.budget_id = match.budget_id;
-      }
-    });
+  // Auto-select tahun anggaran based on start_date
+  watch(() => form.value.start_date, (newDate) => {
+    if (!newDate) return;
+    const year = newDate.split('-')[0];
+    const match = budgets.value.find(b => String(b.year) === year);
+    if (match) {
+      form.value.budget_id = match.budget_id;
+    }
+  });
 });
 </script>

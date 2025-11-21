@@ -59,6 +59,42 @@ class LpjService {
     }
   }
 
+  // Supports multipart/form-data when LPJ includes file attachments
+  async createLpjWithFiles(formData: FormData): Promise<LpjResponse> {
+    try {
+      const authStore = useAuthStore();
+      const response = await fetch(`${API_URL}/lpj`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`
+          // NOTE: Do not set Content-Type for FormData; browser will set the correct multipart boundary
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to create LPJ',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'LPJ created successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
   async updateLpj(id: number, data: Partial<LpjData>): Promise<LpjResponse> {
     try {
       const response = await fetch(`${API_URL}/lpj/${id}`, {

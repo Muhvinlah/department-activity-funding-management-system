@@ -54,7 +54,8 @@ class LpjController extends Controller
             'tor_id' => 'required|exists:tor,tor_id',
             'activity_result' => 'required|string',
             'activity_evaluation' => 'required|string',
-            'budget_used' => 'required|numeric|min:0',
+            'actual_date => required|date',
+            'budget_used' => 'required|numeric|min:1',
         ]);
 
         if ($validator->fails()) {

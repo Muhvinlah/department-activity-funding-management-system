@@ -13,10 +13,11 @@ return new class extends Migration
             $table->id('lpj_id');
             $table->text('activity_result');
             $table->text('activity_evaluation');
+            $table->date('actual_date');
             $table->decimal('budget_used', 15, 2);
             $table->string('status', 50);
             $table->string('current_stage', 50)->default('draft');
-            $table->timestamp('sub_date')->useCurrent();
+            $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
             $table->timestamp('deleted_at')->nullable();
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\LpjController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AnnualBudgetController;
 use App\Http\Controllers\Api\ActivityCategoryController;
+use App\Http\Controllers\Api\DashboardController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -49,16 +50,22 @@ Route::middleware('auth:api')->group(function () {
     // Activity Category routes
     Route::get('activity-categories', [ActivityCategoryController::class, 'index']);
     Route::get('activity-categories/{id}', [ActivityCategoryController::class, 'show']);
+
+    // Dashboard routes
+    Route::get('dashboard/summary', [DashboardController::class, 'getSummary']);
+    Route::get('dashboard/filter', [DashboardController::class, 'getFilteredData']);
+    Route::get('dashboard/charts', [DashboardController::class, 'getChartData']);
+    Route::get('dashboard/annual-budget', [DashboardController::class, 'getAnnualBudgetData']);
 });
 
 // Test route - remove in production
 Route::post('/test-notification', function () {
     $user = App\Models\User::first();
     $tor = App\Models\Tor::first();
-    
+
     $user->notify(new App\Notifications\TorStatusChanged(
         $tor, 'draft', 'submitted', 'Test User'
     ));
-    
+
     return response()->json(['message' => 'Notification sent!']);
 });

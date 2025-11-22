@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\DB;
 
 class RoleSeeder extends Seeder
 {
-    public function run()
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
     {
         $roles = [
             ['role_def' => 'mahasiswa'],
@@ -18,6 +21,11 @@ class RoleSeeder extends Seeder
             ['role_def' => 'ketua jurusan'],
         ];
 
-        DB::table('roles')->insert($roles);
+        foreach ($roles as $role) {
+            DB::table('roles')->updateOrInsert(
+                ['role_def' => $role['role_def']], // Kondisi pencarian
+                ['role_def' => $role['role_def']]  // Data yang akan diinsert/update
+            );
+        }
     }
 }

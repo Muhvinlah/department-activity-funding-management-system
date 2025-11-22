@@ -16,7 +16,8 @@ class TorStatusChanged extends Notification implements ShouldQueue
         public Tor $tor,
         public string $oldStatus,
         public string $newStatus,
-        public string $actionBy
+        public string $actionBy,
+        public ?string $description = null  // ← Tambah parameter ke-5 (optional)
     ) {}
 
     public function via(object $notifiable): array
@@ -26,26 +27,35 @@ class TorStatusChanged extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->subject("TOR Status Updated: {$this->tor->title}")
-            ->greeting("Hello {$notifiable->name},")
-            ->line("The status of your TOR '{$this->tor->title}' has been updated.")
-            ->line("**Previous Status:** {$this->oldStatus}")
-            ->line("**New Status:** {$this->newStatus}")
-            ->line("**Action By:** {$this->actionBy}")
-            ->action('View TOR', url("/tor/{$this->tor->id}"))
+        $mail = (new MailMessage)
+            ->subject("TOR Status Updated: {$this->tor->activity_name}")
+            ->greeting("Hello {$notifiable->full_name},")
+            ->line("The status of your TOR '{$this->tor->activity_name}' has been updated.")
+            ->line("**Previous Status:** " . ucwords(str_replace('_', ' ', $this->oldStatus)))
+            ->line("**New Status:** " . ucwords(str_replace('_', ' ', $this->newStatus)))
+            ->line("**Action By:** {$this->actionBy}");
+
+        // Add description if provided
+        if ($this->description) {
+            $mail->line("**Note:** {$this->description}");
+        }
+
+        $mail->action('View TOR', url("/api/tor/{$this->tor->tor_id}"))
             ->line('Thank you for using our application!');
+
+        return $mail;
     }
 
     public function toArray(object $notifiable): array
     {
         return [
-            'tor_id' => $this->tor->id,
-            'tor_title' => $this->tor->title,
+            'tor_id' => $this->tor->tor_id,
+            'tor_title' => $this->tor->activity_name,
             'old_status' => $this->oldStatus,
             'new_status' => $this->newStatus,
             'action_by' => $this->actionBy,
-            'message' => "TOR '{$this->tor->title}' status changed from {$this->oldStatus} to {$this->newStatus}",
+            'description' => $this->description,
+            'message' => "TOR '{$this->tor->activity_name}' status changed from {$this->oldStatus} to {$this->newStatus}",
         ];
     }
 }

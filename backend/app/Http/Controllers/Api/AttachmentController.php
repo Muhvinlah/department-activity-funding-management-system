@@ -85,6 +85,7 @@ class AttachmentController extends Controller
         try {
             $attachment = Attachment::findOrFail($id);
 
+            // Check if file exists
             if (!Storage::disk('public')->exists($attachment->file_path)) {
                 return response()->json([
                     'success' => false,
@@ -92,7 +93,12 @@ class AttachmentController extends Controller
                 ], 404);
             }
 
-            return Storage::disk('public')->download($attachment->file_path);
+            // Get full file path
+            $filePath = storage_path('app/public/' . $attachment->file_path);
+            $fileName = basename($attachment->file_path);
+
+            // Return file download response
+            return response()->download($filePath, $fileName);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

@@ -23,12 +23,12 @@
       <h2 class="text-4xl font-semibold mb-8 text-[#0d7d90]">Sign in</h2>
       <form @submit.prevent="handleStandardLogin" class="w-full max-w-md">
         <div class="mb-5">
-          <label for="nim" class="block text-sm font-medium text-[#0d7d90] mb-1">NIM/NIP</label>
+          <label for="user_id" class="block text-sm font-medium text-[#0d7d90] mb-1">NIM</label>
           <input
             type="text"
-            id="nim"
-            v-model="userIdentifier"
-            placeholder="Masukkan NIM (mahasiswa) atau NIP (dosen/staff)"
+            id="user_id"
+            v-model="user_id"
+            placeholder="Masukkan NIM Anda (10 digit, contoh: 2207412014)"
             required
             class="w-full px-4 py-2 border border-[#0d7d90] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008797] focus:border-transparent transition duration-200"
           />
@@ -76,10 +76,10 @@
           </button>
         </div>
 
-        <!-- Error Message (commented but ready) -->
-        <!-- <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+        <!-- Error Message -->
+        <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
           {{ errorMessage }}
-        </div> -->
+        </div>
       </form>
     </div>
   </div>
@@ -87,23 +87,22 @@
 
 <script setup lang="ts">
   import { ref } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/authStore';
+
+  const router = useRouter();
+  const authStore = useAuthStore();
 
   // Using camelCase naming convention
-  const userIdentifier = ref('');
+  const user_id = ref('');
   const password = ref('');
   const isPasswordVisible = ref(false);
   const isLoading = ref(false);
   const errorMessage = ref('');
 
-  // Events for parent component
-  const emit = defineEmits<{
-    (e: 'standardLogin', payload: { userIdentifier: string; password: string }): void;
-    (e: 'ssoLogin'): void;
-  }>();
-
   async function handleStandardLogin() {
-    if (!userIdentifier.value || !password.value) {
-      errorMessage.value = 'NIM/NIP dan password harus diisi';
+    if (!user_id.value || !password.value) {
+      errorMessage.value = 'NIM dan password harus diisi';
       return;
     }
 
@@ -111,13 +110,22 @@
     errorMessage.value = '';
 
     try {
-      // This will call your Laravel backend authentication
-      emit('standardLogin', { 
-        userIdentifier: userIdentifier.value, 
-        password: password.value 
+      // Call auth store login with user_id (NIM) and password
+      await authStore.login({
+        user_id: user_id.value,
+        password: password.value,
       });
-    } catch (error) {
-      errorMessage.value = 'Login gagal. Periksa kembali NIM/NIP dan password.';
+
+      // Redirect based on role
+      if (authStore.role === 'mahasiswa') {
+        router.push('/app/home');
+      } else if (authStore.role && ['sekretaris jurusan', 'admin jurusan', 'ketua jurusan'].includes(authStore.role)) {
+        router.push('/app/home');
+      } else {
+        router.push('/app/home');
+      }
+    } catch (error: any) {
+      errorMessage.value = error.response?.data?.message || 'Login gagal. Periksa kembali NIM dan password.';
       console.error('Login error:', error);
     } finally {
       isLoading.value = false;
@@ -125,8 +133,7 @@
   }
 
   function handleSsoLogin() {
-    // SSO is disabled for now, but keep the emit for future use
+    // SSO is disabled for now
     console.log('SSO login clicked - feature disabled pending approval');
-    // emit('ssoLogin');
   }
 </script>

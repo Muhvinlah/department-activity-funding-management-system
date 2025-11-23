@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('tor_approv', function (Blueprint $table) {
             $table->id('approv_id');
             $table->unsignedBigInteger('tor_id')->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('user_id', 10)->nullable();
             $table->unsignedBigInteger('role_id')->nullable();
             $table->string('status', 20);
             $table->text('catatan')->nullable();

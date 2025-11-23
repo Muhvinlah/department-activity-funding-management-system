@@ -15,15 +15,29 @@ class User extends Authenticatable implements JWTSubject
 
     protected $table = 'users';
     protected $primaryKey = 'user_id';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
     const DELETED_AT = 'deleted_at';
 
     protected $fillable = [
+        'user_id',
         'full_name',
         'email',
+        'password',
         'role_id',
+    ];
+
+    protected $hidden = [
+        'password',
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     public function getJWTIdentifier()

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -17,8 +18,10 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'user_id' => 'required|string|digits:10|unique:users',
             'full_name' => 'required|string|max:100',
             'email' => 'required|string|email|max:100|unique:users',
+            'password' => 'required|string|min:6',
             'role_id' => 'required|exists:roles,role_id',
         ]);
 
@@ -30,7 +33,10 @@ class AuthController extends Controller
         }
 
         try {
-            $user = User::create($request->all());
+            $data = $request->all();
+            $data['password'] = Hash::make($request->password);
+            
+            $user = User::create($data);
             $user->load('role');
 
             $token = JWTAuth::fromUser($user);
@@ -53,12 +59,13 @@ class AuthController extends Controller
     }
 
     /**
-     * Login user
+     * Login user with NIM (user_id) and password
      */
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'user_id' => 'required|string|digits:10',
+            'password' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -69,13 +76,13 @@ class AuthController extends Controller
         }
 
         try {
-            $user = User::where('email', $request->email)->first();
+            $user = User::where('user_id', $request->user_id)->first();
 
-            if (!$user) {
+            if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'User not found'
-                ], 404);
+                    'message' => 'NIM atau password salah'
+                ], 401);
             }
 
             $token = JWTAuth::fromUser($user);
@@ -83,16 +90,17 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Login successful',
+                'message' => 'Login berhasil',
                 'data' => [
                     'user' => $user,
-                    'token' => $token
+                    'token' => $token,
+                    'role' => $user->role->role_def ?? null
                 ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to login',
+                'message' => 'Gagal login',
                 'error' => $e->getMessage()
             ], 500);
         }

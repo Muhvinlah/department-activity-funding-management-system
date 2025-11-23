@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamp('deleted_at')->nullable();
 
             $table->unsignedBigInteger('tor_id')->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('user_id', 10)->nullable();
 
             $table->foreign('tor_id')->references('tor_id')->on('tor')->onDelete('cascade');
             $table->foreign('user_id')->references('user_id')->on('users')->onDelete('set null');

@@ -27,7 +27,7 @@ return new class extends Migration
             $table->timestamp('deleted_at')->nullable();
 
             $table->unsignedBigInteger('category_id')->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('user_id', 10)->nullable();
             $table->unsignedBigInteger('budget_id')->nullable();
 
             $table->foreign('category_id')->references('category_id')->on('activity_category')->onDelete('set null');

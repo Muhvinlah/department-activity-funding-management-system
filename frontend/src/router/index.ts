@@ -15,31 +15,31 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/app',
     component: mainLayout,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true },
     children: [
       {
         path: 'home',
         name: 'Home',
         component: () => import('../views/Home.vue'),
-        meta: { requiresAuth: false }
+        meta: { requiresAuth: true }
       },
       {
         path: 'tor',
         name: 'TOR',
         component: () => import('../views/submitTOR.vue'),
-        meta: { requiresAuth: false }
+        meta: { requiresAuth: true }
       },
       {
         path: 'lpj',
         name: 'LPJ',
         component: () => import('../views/submitLPJ.vue'),
-        meta: { requiresAuth: false }
+        meta: { requiresAuth: true }
       },
       {
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('../views/Dashboard.vue'),
-        meta: { requiresAuth: false }
+        meta: { requiresAuth: true }
       }
     ]
   },

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->timestamp('timestamp_aksi')->useCurrent();
             $table->timestamp('deleted_at')->nullable();
 
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('user_id', 10)->nullable();
             $table->unsignedBigInteger('tor_id')->nullable();
             $table->unsignedBigInteger('lpj_id')->nullable();
 

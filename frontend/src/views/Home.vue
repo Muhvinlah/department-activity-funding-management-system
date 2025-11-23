@@ -1,6 +1,6 @@
 <template>
   <!-- Student View -->
-  <div v-if="userRole === 'student'" class="student-home">
+  <div v-if="userRole === 'mahasiswa'" class="student-home">
     <h2 class="text-2xl md:text-3xl font-bold text-[#0d7d90] p-6">Daftar Pengajuan Kegiatan</h2>
     
     <div class="flex flex-col px-12 space-y-8">
@@ -42,7 +42,7 @@
             <button
               v-for="tab in tabs"
               :key="tab.id"
-              @click="activeTab = tab.id"
+              @click="activeTab = tab.id as 'tor' | 'lpj'"
               :class="[
                 'py-2 px-1 border-b-2 font-medium text-sm',
                 activeTab === tab.id
@@ -273,6 +273,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import torService from '@/services/torService';
 
 interface Submission {
   id: number;
@@ -629,35 +630,20 @@ const downloadCSV = (csv: string, filename: string) => {
 const fetchSubmissions = async () => {
   isLoading.value = true;
   try {
-    if (userRole.value === 'student') {
-      // Fetch student's own submissions
-      studentSubmissions.value = [
-        {
-          id: 1,
-          activityName: 'Seminar Kewirausahaan 2024',
-          budget: 15000000,
-          schedule: '15-16 Maret 2024',
-          status: 'under_review',
-          type: 'tor'
-        },
-        {
-          id: 2,
-          activityName: 'Workshop Web Development',
-          budget: 8000000,
-          schedule: '20 Februari 2024',
-          status: 'approved_by_head',
-          type: 'tor'
-        },
-        {
-          id: 3,
-          activityName: 'Pelatihan Public Speaking',
-          budget: 5000000,
-          schedule: '10 April 2024',
-          status: 'needs_revision',
-          revisionNotes: 'Mohon lengkapi dokumen RAB dan tambahkan detail peserta',
-          type: 'tor'
-        }
-      ];
+    if (userRole.value === 'mahasiswa') {
+      // Fetch student's own submissions from API
+      const response = await torService.getMyTors();
+      if (response.success && response.data) {
+        studentSubmissions.value = (response.data || []).map((tor: any) => ({
+          id: tor.tor_id,
+          activityName: tor.activity_name,
+          budget: tor.budget_submitted,
+          schedule: `${tor.start_date} - ${tor.end_date}`,
+          status: tor.status,
+          type: 'tor',
+          revisionNotes: tor.revision_notes
+        }));
+      }
     } else {
       // Fetch admin submissions
       submissions.value = [

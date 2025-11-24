@@ -167,59 +167,6 @@
           </div>
         </div>
 
-        <!-- File Upload Section -->
-        <div class="border-t border-[#F6F5F4] pt-6">
-          <h3 class="text-lg font-semibold text-[#F6F5F4] mb-4">File Pendukung</h3>
-
-          <!-- RAB Upload -->
-          <div class="mb-4">
-            <label for="rab_file" class="block text-sm font-medium text-[#F6F5F4] mb-2">
-              Rencana Anggaran Belanja (RAB) <span class="text-[#D80300]">*</span>
-            </label>
-            <input
-              id="rab_file"
-              type="file"
-              accept=".xlsx,.xls,.pdf"
-              @change="handleFileUpload('rab', $event)"
-              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg text-[#0D7D90] file:bg-[#03D26F] file:text-[#0D7D90] file:border-none file:px-3 file:py-1 file:rounded file:cursor-pointer"
-            />
-            <p class="mt-1 text-xs text-[#F6F5F4]">Format: XLSX, XLS, PDF (max 25MB)</p>
-            <p v-if="attachments.rab" class="mt-1 text-xs text-[#03D26F]">✓ {{ attachments.rab.name }}</p>
-          </div>
-
-          <!-- Supporting Documents -->
-          <div>
-            <label for="supporting_file" class="block text-sm font-medium text-[#F6F5F4] mb-2">
-              Dokumen Pendukung Lainnya
-            </label>
-            <input
-              id="supporting_file"
-              type="file"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              @change="handleFileUpload('supporting', $event)"
-              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg text-[#0D7D90] file:bg-[#03D26F] file:text-[#0D7D90] file:border-none file:px-3 file:py-1 file:rounded file:cursor-pointer"
-            />
-            <p class="mt-1 text-xs text-[#F6F5F4]">Format: PDF, DOC, DOCX, JPG, PNG (max 25MB)</p>
-            <p v-if="attachments.supporting" class="mt-1 text-xs text-[#03D26F]">✓ {{ attachments.supporting.name }}</p>
-          </div>
-        </div>
-
-        <!-- Comments/Revision Notes Section -->
-        <div class="border-t border-[#F6F5F4] pt-6">
-          <h3 class="text-lg font-semibold text-[#F6F5F4] mb-4">Catatan Tambahan</h3>
-          <div>
-            <label for="comments" class="block text-sm font-medium text-[#F6F5F4] mb-2">
-              Catatan/Keterangan (Opsional)
-            </label>
-            <textarea
-              id="comments"
-              v-model="comments"
-              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 h-20"
-              placeholder="Tambahkan catatan atau informasi penting lainnya"
-            ></textarea>
-          </div>
-        </div>
-
         <!-- Category -->
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -263,6 +210,59 @@
             <p v-if="errors.budget_id" class="mt-1 text-xs text-[#D80300]">
               {{ errors.budget_id[0] }}
             </p>
+          </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="border-t border-[#F6F5F4] pt-6">
+          <h3 class="text-lg font-semibold text-[#F6F5F4] mb-4">File Pendukung</h3>
+
+          <!-- RAB Upload -->
+          <div class="mb-4">
+            <label for="rab_file" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+              Rencana Anggaran Belanja (RAB) <span class="text-[#D80300]">*</span>
+            </label>
+            <input
+              id="rab_file"
+              type="file"
+              accept=".xlsx,.xls,.pdf"
+              @change="handleFileUpload('rab', $event)"
+              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg text-[#0D7D90] file:bg-[#0D7D90] file:text-[#F6F5F4] file:border-none file:px-3 file:py-1 file:rounded file:cursor-pointer"
+            />
+            <p class="mt-1 text-xs text-[#F6F5F4]">Format: XLSX, XLS, PDF (max 25MB)</p>
+            <p v-if="attachments.rab" class="mt-1 text-xs text-[#03D26F]">✓ {{ attachments.rab.name }}</p>
+          </div>
+
+          <!-- Supporting Documents -->
+          <div>
+            <label for="supporting_file" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+              Dokumen Pendukung Lainnya
+            </label>
+            <input
+              id="supporting_file"
+              type="file"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              @change="handleFileUpload('supporting', $event)"
+              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg text-[#0D7D90] file:bg-[#0D7D90] file:text-[#F6F5F4] file:border-none file:px-3 file:py-1 file:rounded file:cursor-pointer"
+            />
+            <p class="mt-1 text-xs text-[#F6F5F4]">Format: PDF, DOC, DOCX, JPG, PNG (max 25MB)</p>
+            <p v-if="attachments.supporting" class="mt-1 text-xs text-[#03D26F]">✓ {{ attachments.supporting.name }}</p>
+          </div>
+        </div>
+
+        <!-- Comments/Revision Notes Section -->
+        <div class="border-t border-[#F6F5F4] pt-6">
+          <h3 class="text-lg font-semibold text-[#F6F5F4] mb-4">Catatan Tambahan</h3>
+          <div>
+            <label for="comments" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+              Catatan/Keterangan (Opsional)
+            </label>
+            <textarea
+              id="comments"
+              v-model="comments"
+              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 h-20"
+              placeholder="Tambahkan catatan atau informasi penting lainnya"
+            ></textarea>
           </div>
         </div>
 

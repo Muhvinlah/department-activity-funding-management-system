@@ -30,7 +30,7 @@ class LpjController extends Controller
                 $query->where('user_id', Auth::guard('api')->id());
             }
 
-            $lpjs = $query->orderBy('sub_date', 'desc')->get();
+            $lpjs = $query->orderBy('created_at', 'desc')->get();
 
             return response()->json([
                 'success' => true,
@@ -98,11 +98,11 @@ class LpjController extends Controller
                 'activity_result' => $request->activity_result,
                 'activity_evaluation' => $request->activity_evaluation,
                 'budget_used' => $request->budget_used,
-                'status' => 'draft',
-                'current_stage' => 'draft',
+                'status' => 'under_review',
+                'current_stage' => 'under_review',
             ]);
 
-            $lpj->addStatusHistory('draft', 'LPJ created as draft', Auth::guard('api')->id());
+            $lpj->addStatusHistory('under_review', 'LPJ submitted for review', Auth::guard('api')->id());
 
             return response()->json([
                 'success' => true,

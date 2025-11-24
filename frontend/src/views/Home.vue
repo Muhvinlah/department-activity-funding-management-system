@@ -8,7 +8,7 @@
         v-for="submission in studentSubmissions" 
         :key="submission.id"
         @click="viewStudentSubmission(submission)"
-        class="border-b-2 space-y-6 cursor-pointer hover:bg-gray-50 p-4 rounded-lg transition-colors"
+        class="border-b-2 space-y-6 cursor-pointer hover:bg-black/10 p-4 rounded-lg transition-colors"
       >
         <div class="flex justify-between items-center">
           <span class="font-bold text-xl">{{ submission.activityName }}</span>
@@ -18,7 +18,7 @@
         </div>
         <div class="flex text-md space-x-8 pt-2">
           <span>Anggaran: Rp {{ formatCurrency(submission.budget) }}</span>
-          <span>Jadwal: {{ formatDate(submission.schedule) }}</span>
+          <span>Jadwal: {{ formatSchedule(submission.schedule) }}</span>
         </div>
         <div v-if="submission.revisionNotes" class="text-sm text-orange-600 bg-orange-50 p-2 rounded">
           <strong>Catatan Revisi:</strong> {{ submission.revisionNotes }}
@@ -34,7 +34,7 @@
 
   <!-- Admin View -->
   <div v-else class="admin-home">
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto my-16">
       <!-- Tabs for TOR vs LPJ -->
       <div class="mb-6">
         <div class="border-b border-gray-200">
@@ -124,15 +124,6 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
-          <select v-model="filters.department" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">All Departments</option>
-            <option v-for="dept in departments" :key="dept.id" :value="dept.id">
-              {{ dept.name }}
-            </option>
-          </select>
-        </div>
-        <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
           <select v-model="filters.year" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">All Years</option>
@@ -154,7 +145,10 @@
       <!-- Data Table -->
       <div class="overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-[#0d7d90]">
+          <div v-if="isLoading" class="px-6 py-8 text-center text-sm text-[#0d7d90]">
+            Loading submissions...
+          </div>
+          <table v-else class="min-w-full divide-y divide-[#0d7d90]">
             <thead>
               <tr>
                 <th 
@@ -169,9 +163,6 @@
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
                     </span>
                   </div>
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-[#0d7d90] uppercase tracking-wider">
-                  Actions
                 </th>
               </tr>
             </thead>
@@ -192,9 +183,6 @@
                   {{ item.submitterName }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ item.department }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ formatCurrency(item.budget) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -205,33 +193,9 @@
                     {{ formatStatus(item.status) }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div class="flex items-center gap-2" @click.stop>
-                    <button
-                      @click="viewSubmission(item)"
-                      class="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-                      title="View Details"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
-                    <button
-                      v-if="item.supportingDocuments && item.supportingDocuments.length > 0"
-                      @click="downloadDocuments(item.supportingDocuments)"
-                      class="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50 transition-colors"
-                      title="Download Documents"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
               </tr>
               <tr v-if="paginatedData.length === 0">
-                <td :colspan="currentColumns.length + 1" class="px-6 py-8 text-center text-sm text-[#0d7d90]">
+                <td :colspan="currentColumns.length" class="px-6 py-8 text-center text-sm text-[#0d7d90]">
                   No {{ activeTab.toUpperCase() }} submissions found matching your criteria.
                 </td>
               </tr>
@@ -274,6 +238,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import torService from '@/services/torService';
+import lpjService from '@/services/lpjService';
+import { USER_ROLES } from '@/constants/userRoles';
 
 interface Submission {
   id: number;
@@ -311,7 +277,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 // Reactive data
-const userRole = computed(() => authStore.user?.role);
+const userRole = computed(() => authStore.role);
 const activeTab = ref<'tor' | 'lpj'>('tor');
 const submissions = ref<Submission[]>([]);
 const studentSubmissions = ref<StudentSubmission[]>([]);
@@ -339,7 +305,6 @@ const torColumns = [
   { key: 'no', label: 'No' },
   { key: 'activityName', label: 'Activity Name' },
   { key: 'submitterName', label: 'Submitted By' },
-  { key: 'department', label: 'Department' },
   { key: 'budget', label: 'Budget' },
   { key: 'submittedAt', label: 'Submitted Date' },
   { key: 'status', label: 'Status' }
@@ -349,30 +314,13 @@ const lpjColumns = [
   { key: 'no', label: 'No' },
   { key: 'activityName', label: 'Activity Name' },
   { key: 'submitterName', label: 'Submitted By' },
-  { key: 'department', label: 'Department' },
   { key: 'budget', label: 'Actual Budget' },
   { key: 'submittedAt', label: 'Submitted Date' },
   { key: 'status', label: 'Status' }
 ];
 
 const entriesOptions = [10, 25, 50, 100];
-const yearOptions = [2023, 2024, 2025];
-const departments = [
-  { id: 'ti', name: 'Teknik Informatika' },
-  { id: 'si', name: 'Sistem Informasi' },
-  { id: 'mi', name: 'Manajemen Informatika' }
-];
-
-// Computed properties
-const userRoleDisplay = computed(() => {
-  const roleMap = {
-    'department_admin': 'Department Administrator',
-    'secretary': 'Secretary',
-    'department_head': 'Department Head',
-    'student': 'Student'
-  };
-  return roleMap[userRole.value] || userRole.value;
-});
+const yearOptions = [2024, 2025, 2026];
 
 const currentColumns = computed(() => {
   return activeTab.value === 'tor' ? torColumns : lpjColumns;
@@ -424,8 +372,8 @@ const paginatedData = computed(() => {
   
   // Apply sorting
   const sorted = [...filteredData.value].sort((a, b) => {
-    let aValue = a[sortField.value];
-    let bValue = b[sortField.value];
+    let aValue = (a as any)[sortField.value];
+    let bValue = (b as any)[sortField.value];
     
     if (sortField.value === 'budget') {
       aValue = Number(aValue);
@@ -453,16 +401,32 @@ const getTabCount = (tabId: string) => {
 };
 
 const isRelevantForCurrentRole = (submission: Submission) => {
+  // Students shouldn't see admin view
+  if (userRole.value === 'mahasiswa') {
+    return false;
+  }
+  
+  // Role-based filtering for admin/reviewer roles
+  const role = userRole.value;
   const status = submission.status;
   
-  // Define which statuses are relevant for each role
-  const roleStatusMap = {
-    'secretary': ['submitted', 'under_review', 'needs_revision'],
-    'department_admin': ['reviewed_by_secretary', 'verified_by_admin', 'needs_revision'],
-    'department_head': ['verified_by_admin', 'approved_by_head', 'needs_revision']
-  };
+  // Secretary (Sekretaris Jurusan) - See NEW submissions (submitted, under_review)
+  if (role === USER_ROLES.SECRETARY) {
+    return ['submitted', 'under_review'].includes(status);
+  }
   
-  return roleStatusMap[userRole.value]?.includes(status) || false;
+  // Admin (Admin Jurusan) - See submissions AFTER secretary completed review
+  if (role === USER_ROLES.ADMIN) {
+    return ['reviewed_by_secretary'].includes(status);
+  }
+  
+  // Head (Ketua Jurusan) - See submissions ready for final approval (after admin)
+  if (role === USER_ROLES.HEAD) {
+    return ['verified_by_admin'].includes(status);
+  }
+  
+  // Default: don't show
+  return false;
 };
 
 const getItemNumber = (index: number) => (currentPage.value - 1) * perPage.value + index + 1;
@@ -481,8 +445,19 @@ const formatDate = (dateString: string) => {
   });
 };
 
+const formatSchedule = (schedule: string) => {
+  // Schedule format: "start_date - end_date"
+  const dates = schedule.split(' - ');
+  if (dates.length === 2 && dates[0] && dates[1]) {
+    const startDate = formatDate(dates[0]!.trim());
+    const endDate = formatDate(dates[1]!.trim());
+    return `${startDate} - ${endDate}`;
+  }
+  return schedule;
+};
+
 const formatStatus = (status: string) => {
-  const statusMap = {
+  const statusMap: Record<string, string> = {
     'submitted': 'Submitted',
     'under_review': 'Under Review',
     'reviewed_by_secretary': 'Reviewed by Secretary',
@@ -495,7 +470,7 @@ const formatStatus = (status: string) => {
 };
 
 const formatStudentStatus = (status: string) => {
-  const statusMap = {
+  const statusMap: Record<string, string> = {
     'submitted': 'Diajukan',
     'under_review': 'Diperiksa Sekretaris Jurusan',
     'reviewed_by_secretary': 'Diperiksa Sekretaris Jurusan',
@@ -508,7 +483,7 @@ const formatStudentStatus = (status: string) => {
 };
 
 const getStatusClasses = (status: string) => {
-  const statusClasses = {
+  const statusClasses: Record<string, string> = {
     'submitted': 'bg-yellow-100 text-yellow-800',
     'under_review': 'bg-blue-100 text-blue-800',
     'reviewed_by_secretary': 'bg-purple-100 text-purple-800',
@@ -521,7 +496,7 @@ const getStatusClasses = (status: string) => {
 };
 
 const getStatusBadgeClass = (status: string) => {
-  const statusClasses = {
+  const statusClasses: Record<string, string> = {
     'submitted': 'bg-[#FACC15]/25 text-[#FACC15]',
     'under_review': 'bg-[#FACC15]/25 text-[#FACC15]',
     'reviewed_by_secretary': 'bg-[#FACC15]/25 text-[#FACC15]',
@@ -560,10 +535,15 @@ const nextPage = () => {
 };
 
 const viewSubmission = (submission: Submission) => {
+  console.log('Home: viewSubmission called with:', submission);
   if (submission.type === 'tor') {
-    router.push(`/app/approval/tor/${submission.id}`);
+    const path = `/app/approval/tor/${submission.id}`;
+    console.log('Home: Navigating to TOR review page:', path);
+    router.push(path);
   } else {
-    router.push(`/app/approval/lpj/${submission.id}`);
+    const path = `/app/approval/lpj/${submission.id}`;
+    console.log('Home: Navigating to LPJ review page:', path);
+    router.push(path);
   }
 };
 
@@ -631,51 +611,77 @@ const fetchSubmissions = async () => {
   isLoading.value = true;
   try {
     if (userRole.value === 'mahasiswa') {
-      // Fetch student's own submissions from API
-      const response = await torService.getMyTors();
-      if (response.success && response.data) {
-        studentSubmissions.value = (response.data || []).map((tor: any) => ({
-          id: tor.tor_id,
-          activityName: tor.activity_name,
-          budget: tor.budget_submitted,
-          schedule: `${tor.start_date} - ${tor.end_date}`,
-          status: tor.status,
-          type: 'tor',
-          revisionNotes: tor.revision_notes
-        }));
-      }
+      // Fetch student's own submissions from API (both TOR and LPJ)
+      const torResponse = await torService.getMyTors();
+      const lpjResponse = await lpjService.getMyLpjs();
+      
+      console.log('Student TOR Response:', torResponse);
+      console.log('Student LPJ Response:', lpjResponse);
+      
+      const torSubmissions = (torResponse.data || []).map((tor: any) => ({
+        id: tor.tor_id,
+        activityName: tor.activity_name,
+        budget: tor.budget_submitted,
+        schedule: `${tor.start_date} - ${tor.end_date}`,
+        status: tor.status,
+        type: 'tor',
+        revisionNotes: tor.revision_notes
+      }));
+      
+      const lpjSubmissions = (lpjResponse.data || []).map((lpj: any) => ({
+        id: lpj.lpj_id,
+        activityName: lpj.tor?.activity_name || 'Unknown Activity',
+        budget: lpj.budget_used,
+        schedule: `${lpj.actual_date} - ${lpj.actual_date}`,
+        status: lpj.status,
+        type: 'lpj',
+        revisionNotes: lpj.revision_notes
+      }));
+      
+      console.log('Student TOR Submissions:', torSubmissions);
+      console.log('Student LPJ Submissions:', lpjSubmissions);
+      
+      studentSubmissions.value = [...torSubmissions, ...lpjSubmissions];
+      console.log('All Student Submissions:', studentSubmissions.value);
     } else {
-      // Fetch admin submissions
-      submissions.value = [
-        {
-          id: 1,
-          type: 'tor',
-          activityName: 'Seminar Kewirausahaan 2024',
-          submitterName: 'Ahmad Rizki',
-          department: 'Teknik Informatika',
-          budget: 15000000,
-          submittedAt: '2024-02-01',
-          status: 'under_review',
-          currentStage: 'Secretary Review',
-          supportingDocuments: [
-            { id: 1, name: 'proposal.pdf', url: '/documents/proposal1.pdf', type: 'proposal' }
-          ]
-        },
-        {
-          id: 2,
-          type: 'lpj',
-          activityName: 'Workshop Web Development',
-          submitterName: 'Siti Nurhaliza',
-          department: 'Sistem Informasi',
-          budget: 8000000,
-          submittedAt: '2024-02-15',
-          status: 'verified_by_admin',
-          currentStage: 'Department Head Approval',
-          supportingDocuments: [
-            { id: 1, name: 'lpj_report.pdf', url: '/documents/lpj1.pdf', type: 'report' }
-          ]
-        }
-      ];
+      // Fetch admin submissions from API (both TOR and LPJ)
+      const torResponse = await torService.getAllTors();
+      const lpjResponse = await lpjService.getAllLpjs();
+      
+      console.log('Admin TOR Response:', torResponse);
+      console.log('Admin LPJ Response:', lpjResponse);
+      
+      const torSubmissions = (torResponse.data || []).map((tor: any) => ({
+        id: tor.tor_id,
+        type: 'tor' as const,
+        activityName: tor.activity_name,
+        submitterName: tor.user?.full_name || 'Unknown',
+        department: tor.user?.department || 'Unknown',
+        budget: tor.budget_submitted,
+        submittedAt: tor.sub_date,
+        status: tor.status,
+        currentStage: tor.current_stage,
+        supportingDocuments: tor.attachments || []
+      }));
+      
+      const lpjSubmissions = (lpjResponse.data || []).map((lpj: any) => ({
+        id: lpj.lpj_id,
+        type: 'lpj' as const,
+        activityName: lpj.tor?.activity_name || 'Unknown Activity',
+        submitterName: lpj.user?.full_name || 'Unknown',
+        department: lpj.user?.department || 'Unknown',
+        budget: lpj.budget_used,
+        submittedAt: lpj.created_at,
+        status: lpj.status,
+        currentStage: lpj.current_stage,
+        supportingDocuments: lpj.attachments || []
+      }));
+      
+      console.log('Admin TOR Submissions:', torSubmissions);
+      console.log('Admin LPJ Submissions:', lpjSubmissions);
+      
+      submissions.value = [...torSubmissions, ...lpjSubmissions];
+      console.log('All Admin Submissions:', submissions.value);
     }
   } catch (error) {
     console.error('Error fetching submissions:', error);

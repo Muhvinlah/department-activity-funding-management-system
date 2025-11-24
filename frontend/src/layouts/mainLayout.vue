@@ -58,7 +58,7 @@
                 class="px-2 py-2 text-[#0d7d90] bg-white rounded-xl font-semibold text-sm md:text-base hover:ring-2 hover:ring-[#F6F5F4]/50">
                 halaman utama
                 </button>
-                <button @click="goToPengajuan"
+                <button v-if="canAccessPengajuan" @click="goToPengajuan"
                 class="px-2 py-2 text-[#0d7d90] bg-white rounded-xl font-semibold text-sm md:text-base hover:ring-2 hover:ring-[#F6F5F4]/50">
                 Pengajuan
                 </button>
@@ -74,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -84,9 +84,15 @@ const authStore = useAuthStore();
 const isOpen = ref(false);
 const username = ref('');
 
+// Computed property to check if user can access Pengajuan tab
+const canAccessPengajuan = computed(() => {
+  const userRole = authStore.role;
+  return userRole === 'mahasiswa' || userRole === 'dosen';
+});
+
 // Initialize username from auth store
 onMounted(() => {
-  username.value = authStore.user?.name || 'User';
+  username.value = authStore.user?.full_name || 'User';
 });
 
 const toggleDropdown = () => {

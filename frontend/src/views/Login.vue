@@ -1,8 +1,8 @@
 <template>
   <div class="h-screen xl:grid grid-cols-3 overflow-hidden">
-    <!-- Left Side Content (unchanged) -->
+    <!-- Left Side Content -->
     <div class="hidden xl:flex flex-col bg-[#0d7d90] text-[#f6f5f4]">
-      <div class="flex place-items-center">
+      <div class="flex place-items-center px-5 py-4">
         <img src="../assets/campus.png" alt="Campus Logo" class="h-16 sm:h-8">
         <div><h2 class="text-base ml-2">Politeknik Negeri Jakarta (PNJ)</h2></div>
       </div>

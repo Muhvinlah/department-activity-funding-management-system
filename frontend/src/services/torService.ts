@@ -151,6 +151,39 @@ class TorService {
     }
   }
 
+  async getAllTors(status?: string): Promise<TorResponse> {
+    try {
+      let url = `${API_URL}/tor`;
+      if (status) {
+        url += `?status=${status}`;
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getAuthHeader()
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to fetch TORs'
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
   async submitTor(id: number, comment?: string): Promise<TorResponse> {
     try {
       const response = await fetch(`${API_URL}/tor/${id}/submit`, {

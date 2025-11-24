@@ -22,26 +22,34 @@ class TestDataSeeder extends Seeder
         $ketuaRole = Role::where('role_def', 'ketua jurusan')->first();
 
         $mahasiswa = User::create([
+            'user_id' => '1234567890',
             'full_name' => 'John Doe',
             'email' => 'john@example.com',
+            'password' => bcrypt('password123'),
             'role_id' => $mahasiswaRole->role_id,
         ]);
 
         $sekretaris = User::create([
+            'user_id' => '1234567891',
             'full_name' => 'Jane Secretary',
             'email' => 'secretary@example.com',
+            'password' => bcrypt('password123'),
             'role_id' => $sekretarisRole->role_id,
         ]);
 
         $admin = User::create([
+            'user_id' => '1234567892',
             'full_name' => 'Admin User',
             'email' => 'admin@example.com',
+            'password' => bcrypt('password123'),
             'role_id' => $adminRole->role_id,
         ]);
 
         $ketua = User::create([
+            'user_id' => '1234567893',
             'full_name' => 'Head Department',
             'email' => 'head@example.com',
+            'password' => bcrypt('password123'),
             'role_id' => $ketuaRole->role_id,
         ]);
 
@@ -86,8 +94,8 @@ class TestDataSeeder extends Seeder
             'end_date' => '2025-03-15',
             'budget_submitted' => 8000000,
             'pic' => 'Jane Doe',
-            'status' => 'submitted',
-            'current_stage' => 'submitted',
+            'status' => 'under_review',
+            'current_stage' => 'under_review',
             'category_id' => $akademik->category_id,
             'user_id' => $mahasiswa->user_id,
             'budget_id' => $budget2025->budget_id,
@@ -102,22 +110,47 @@ class TestDataSeeder extends Seeder
             'end_date' => '2025-04-12',
             'budget_submitted' => 3000000,
             'pic' => 'John Doe',
-            'status' => 'draft',
-            'current_stage' => 'draft',
+            'status' => 'under_review',
+            'current_stage' => 'under_review',
             'category_id' => $kemahasiswaan->category_id,
             'user_id' => $mahasiswa->user_id,
             'budget_id' => $budget2025->budget_id,
         ]);
 
         // Buat LPJ untuk tor1
-        Lpj::create([
+        $lpj1 = Lpj::create([
             'tor_id' => $tor1->tor_id,
             'user_id' => $mahasiswa->user_id,
-            'activity_result' => 'Workshop berjalan lancar dengan 50 peserta',
-            'activity_evaluation' => 'Peserta sangat antusias dan memberikan feedback positif',
+            'activity_result' => 'Workshop Pemrograman Web berjalan dengan sangat baik. Semua 50 peserta hadir dan aktif mengikuti pembelajaran. Materi mencakup HTML, CSS, JavaScript, dan framework modern.',
+            'activity_evaluation' => 'Peserta sangat antusias dan memberikan feedback positif. Akan dilanjutkan dengan program advanced level.',
+            'actual_date' => '2025-02-03',
             'budget_used' => 4500000,
-            'status' => 'submitted',
-            'current_stage' => 'submitted',
+            'status' => 'approved_by_head',
+            'current_stage' => 'approved_by_head',
+        ]);
+
+        // Buat LPJ untuk tor2
+        $lpj2 = Lpj::create([
+            'tor_id' => $tor2->tor_id,
+            'user_id' => $mahasiswa->user_id,
+            'activity_result' => 'Seminar Teknologi AI dihadiri oleh 95 mahasiswa dari berbagai jurusan. Pembicara dari industri tech memberikan insights mengenai aplikasi AI di dunia nyata.',
+            'activity_evaluation' => 'Peserta sangat tertarik dengan topik AI dan machine learning. Banyak pertanyaan interaktif dari audiens.',
+            'actual_date' => '2025-03-15',
+            'budget_used' => 7800000,
+            'status' => 'under_review',
+            'current_stage' => 'under_review',
+        ]);
+
+        // Buat LPJ untuk tor3
+        $lpj3 = Lpj::create([
+            'tor_id' => $tor3->tor_id,
+            'user_id' => $mahasiswa->user_id,
+            'activity_result' => 'Lomba Coding Internal berhasil diikuti oleh 28 peserta dari 5 jurusan. Terdapat 3 pemenang dengan hadiah masing-masing. Tingkat kesulitan soal sesuai dengan ekspektasi.',
+            'activity_evaluation' => 'Event berjalan sesuai jadwal dan peserta memberikan respons positif. Ada saran untuk menambah kategori lomba di event berikutnya.',
+            'actual_date' => '2025-04-12',
+            'budget_used' => 2800000,
+            'status' => 'under_review',
+            'current_stage' => 'under_review',
         ]);
     }
 }

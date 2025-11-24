@@ -11,8 +11,6 @@ return new class extends Migration
         // Create status ENUM type
         DB::statement("
             CREATE TYPE status AS ENUM (
-                'draft',
-                'submitted',
                 'under_review',
                 'reviewed_by_secretary',
                 'verified_by_admin',

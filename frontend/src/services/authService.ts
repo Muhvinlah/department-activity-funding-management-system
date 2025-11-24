@@ -45,12 +45,23 @@ export const register = async (credentials: {
 };
 
 export const logout = async (): Promise<any> => {
-  const response = await axios.post(`${API_URL}/logout`, {}, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return { success: true, message: 'Already logged out' };
     }
-  });
-  return response.data;
+    
+    const response = await axios.post(`${API_URL}/logout`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    // Even if logout API fails, we still want to clear local session
+    // Return success so the store can proceed with clearing data
+    return { success: true, message: 'Logout processed' };
+  }
 };
 
 export const getProfile = async (): Promise<any> => {

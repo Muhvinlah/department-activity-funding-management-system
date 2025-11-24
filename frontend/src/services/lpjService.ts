@@ -182,6 +182,39 @@ class LpjService {
     }
   }
 
+  async getAllLpjs(status?: string): Promise<LpjResponse> {
+    try {
+      let url = `${API_URL}/lpj`;
+      if (status) {
+        url += `?status=${status}`;
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getAuthHeader()
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to fetch LPJs'
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
   async submitLpj(id: number, comment?: string): Promise<LpjResponse> {
     try {
       const response = await fetch(`${API_URL}/lpj/${id}/submit`, {

@@ -90,11 +90,11 @@ class TorController extends Controller
                 'category_id' => $request->category_id,
                 'budget_id' => $request->budget_id,
                 'user_id' => Auth::guard('api')->id(),
-                'status' => 'draft',
-                'current_stage' => 'draft',
+                'status' => 'under_review',
+                'current_stage' => 'under_review',
             ]);
 
-            $tor->addStatusHistory('draft', 'TOR created as draft', Auth::guard('api')->id());
+            $tor->addStatusHistory('under_review', 'TOR submitted for review', Auth::guard('api')->id());
 
             return response()->json([
                 'success' => true,

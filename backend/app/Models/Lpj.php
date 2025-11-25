@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Events\LpjApproved;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -153,6 +154,9 @@ class Lpj extends Model
 
         $this->addStatusHistory('approved_by_head', $catatan, $userId);
         $this->addApproval($userId, $roleId, 'approved', $catatan);
+
+        // Trigger event to update dashboard
+        event(new LpjApproved($this));
     }
 
     /**

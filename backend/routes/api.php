@@ -56,6 +56,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('dashboard/filter', [DashboardController::class, 'getFilteredData']);
     Route::get('dashboard/charts', [DashboardController::class, 'getChartData']);
     Route::get('dashboard/annual-budget', [DashboardController::class, 'getAnnualBudgetData']);
+    Route::post('dashboard/refresh-cache', [DashboardController::class, 'refreshCache']);
+
+    // LPJ Pre-fill routes
+    Route::get('lpj/prefill/{torId}', [LpjController::class, 'getPreFillData']);
+    Route::post('lpj/create-with-prefill', [LpjController::class, 'createWithPreFill']);
 });
 
 // Test route - remove in production

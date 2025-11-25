@@ -553,4 +553,171 @@ class LpjController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get TOR data for pre-filling LPJ form
+     *
+     * @param int $torId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPreFillData($torId)
+    {
+        try {
+            $tor = Tor::with(['user', 'category', 'annualBudget', 'attachments'])
+                ->findOrFail($torId);
+
+            // Check if TOR is approved
+            if ($tor->status !== 'approved_by_head') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Can only create LPJ for approved TOR'
+                ], 400);
+            }
+
+            // Check if LPJ already exists
+            if ($tor->lpj) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'LPJ already exists for this TOR',
+                    'existing_lpj_id' => $tor->lpj->lpj_id
+                ], 400);
+            }
+
+            // Check if user owns the TOR
+            if ($tor->user_id !== Auth::guard('api')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to create LPJ for this TOR'
+                ], 403);
+            }
+
+            // Prepare pre-fill data
+            $preFillData = [
+                'tor_id' => $tor->tor_id,
+                'activity_name' => $tor->activity_name,
+                'activity_background' => $tor->activity_background,
+                'activity_purpose' => $tor->activity_purpose,
+                'participant' => $tor->participant,
+                'pic' => $tor->pic,
+                'start_date' => $tor->start_date->format('Y-m-d'),
+                'end_date' => $tor->end_date->format('Y-m-d'),
+                'budget_submitted' => (float) $tor->budget_submitted,
+                'category' => $tor->category ? $tor->category->category_def : null,
+                'attachments' => $tor->attachments->map(function ($attachment) {
+                    return [
+                        'id' => $attachment->attach_id,
+                        'file_path' => $attachment->file_path,
+                        'file_name' => basename($attachment->file_path),
+                    ];
+                }),
+                // Suggested fields for LPJ
+                'suggested_fields' => [
+                    'activity_result' => "Workshop/kegiatan {$tor->activity_name} telah dilaksanakan pada tanggal {$tor->start_date->format('d M Y')} sampai {$tor->end_date->format('d M Y')} dengan jumlah peserta {$tor->participant}.",
+                    'activity_evaluation' => "Kegiatan berjalan dengan lancar dan mencapai tujuan yang telah ditetapkan.",
+                    'budget_used' => (float) $tor->budget_submitted, // Default sama dengan yang diajukan
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'TOR data retrieved for LPJ pre-fill',
+                'data' => $preFillData
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get pre-fill data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create LPJ with pre-filled data from TOR
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function createWithPreFill(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'tor_id' => 'required|exists:tor,tor_id',
+            'activity_result' => 'required|string',
+            'activity_evaluation' => 'required|string',
+            'budget_used' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Validate TOR
+            $tor = Tor::findOrFail($request->tor_id);
+
+            if ($tor->status !== 'approved_by_head') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Can only create LPJ for approved TOR'
+                ], 400);
+            }
+
+            if ($tor->lpj) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'LPJ already exists for this TOR'
+                ], 400);
+            }
+
+            if ($tor->user_id !== Auth::guard('api')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to create LPJ for this TOR'
+                ], 403);
+            }
+
+            // Create LPJ
+            $lpj = Lpj::create([
+                'tor_id' => $request->tor_id,
+                'user_id' => Auth::guard('api')->id(),
+                'activity_result' => $request->activity_result,
+                'activity_evaluation' => $request->activity_evaluation,
+                'budget_used' => $request->budget_used,
+                'status' => 'draft',
+                'current_stage' => 'draft',
+            ]);
+
+            $lpj->addStatusHistory('draft', 'LPJ created as draft', Auth::guard('api')->id());
+
+            // Calculate budget comparison
+            $budgetComparison = [
+                'budget_submitted' => (float) $tor->budget_submitted,
+                'budget_used' => (float) $lpj->budget_used,
+                'difference' => (float) ($tor->budget_submitted - $lpj->budget_used),
+                'percentage' => $tor->budget_submitted > 0
+                    ? round(($lpj->budget_used / $tor->budget_submitted) * 100, 2)
+                    : 0,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'LPJ created successfully with TOR data',
+                'data' => [
+                    'lpj' => $lpj->load(['tor', 'user']),
+                    'budget_comparison' => $budgetComparison,
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create LPJ',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

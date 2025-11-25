@@ -11,6 +11,9 @@ use App\Models\StatusHist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\JsonResponse;
+
 
 class DashboardController extends Controller
 {
@@ -19,93 +22,96 @@ class DashboardController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getSummary()
+    public function getSummary(): JsonResponse
     {
         try {
-            $user = Auth::guard('api')->user();
 
-            // Total counts
-            $totalTor = Tor::count();
-            $totalLpj = Lpj::count();
-            $totalUsers = User::count();
+            // Cache dashboard summary 5 menit
+            $summary = Cache::remember('dashboard_summary', 300, function () {
 
-            // TOR statistics by status
-            $torByStatus = Tor::select('status', DB::raw('count(*) as count'))
-                ->groupBy('status')
-                ->pluck('count', 'status');
+                $user = Auth::guard('api')->user();
 
-            // LPJ statistics by status
-            $lpjByStatus = Lpj::select('status', DB::raw('count(*) as count'))
-                ->groupBy('status')
-                ->pluck('count', 'status');
+                // Total counts
+                $totalTor = Tor::count();
+                $totalLpj = Lpj::count();
+                $totalUsers = User::count();
 
-            // Current year budget
-            $currentYear = date('Y');
-            $annualBudget = AnnualBudget::where('tahun', $currentYear)->first();
+                // TOR statistics by status
+                $torByStatus = Tor::select('status', DB::raw('count(*) as count'))
+                    ->groupBy('status')
+                    ->pluck('count', 'status');
 
-            $budgetInfo = null;
-            if ($annualBudget) {
-                $usedBudget = Tor::where('status', 'approved_by_head')
-                    ->whereHas('annualBudget', function ($query) use ($currentYear) {
-                        $query->where('tahun', $currentYear);
-                    })
-                    ->sum('budget_submitted');
+                // LPJ statistics by status
+                $lpjByStatus = Lpj::select('status', DB::raw('count(*) as count'))
+                    ->groupBy('status')
+                    ->pluck('count', 'status');
 
-                $budgetInfo = [
-                    'total_budget' => (float) $annualBudget->budget,
-                    'used_budget' => (float) $usedBudget,
-                    'remaining_budget' => (float) ($annualBudget->budget - $usedBudget),
-                    'usage_percentage' => $annualBudget->budget > 0
-                        ? round(($usedBudget / $annualBudget->budget) * 100, 2)
-                        : 0,
-                ];
-            }
+                // Current year budget
+                $currentYear = date('Y');
+                $annualBudget = AnnualBudget::where('tahun', $currentYear)->first();
 
-            // Recent activities
-            $recentActivities = StatusHist::with(['user', 'tor', 'lpj'])
-                ->orderBy('timestamp_aksi', 'desc')
-                ->limit(10)
-                ->get()
-                ->map(function ($history) {
-                    return [
-                        'id' => $history->hist_id,
-                        'type' => $history->tor_id ? 'TOR' : 'LPJ',
-                        'activity_name' => $history->tor ? $history->tor->activity_name : ($history->lpj ? $history->lpj->tor->activity_name : 'N/A'),
-                        'status' => $history->status,
-                        'user' => $history->user ? $history->user->full_name : 'System',
-                        'catatan' => $history->catatan,
-                        'timestamp' => $history->timestamp_aksi,
+                $budgetInfo = null;
+                if ($annualBudget) {
+                    $usedBudget = Tor::where('status', 'approved_by_head')
+                        ->whereHas('annualBudget', function ($query) use ($currentYear) {
+                            $query->where('tahun', $currentYear);
+                        })
+                        ->sum('budget_submitted');
+
+                    $budgetInfo = [
+                        'total_budget' => (float) $annualBudget->budget,
+                        'used_budget' => (float) $usedBudget,
+                        'remaining_budget' => (float) ($annualBudget->budget - $usedBudget),
+                        'usage_percentage' => $annualBudget->budget > 0
+                            ? round(($usedBudget / $annualBudget->budget) * 100, 2)
+                            : 0,
                     ];
-                });
+                }
 
-            // Pending approvals count (untuk reviewer)
-            $pendingApprovals = [
-                'tor_submitted' => Tor::where('status', 'submitted')->count(),
-                'tor_reviewed' => Tor::where('status', 'reviewed_by_secretary')->count(),
-                'tor_verified' => Tor::where('status', 'verified_by_admin')->count(),
-                'lpj_submitted' => Lpj::where('status', 'submitted')->count(),
-                'lpj_reviewed' => Lpj::where('status', 'reviewed_by_secretary')->count(),
-                'lpj_verified' => Lpj::where('status', 'verified_by_admin')->count(),
-            ];
+                // Recent activities
+                $recentActivities = StatusHist::with(['user', 'tor', 'lpj'])
+                    ->orderBy('timestamp_aksi', 'desc')
+                    ->limit(10)
+                    ->get()
+                    ->map(function ($history) {
+                        return [
+                            'id' => $history->hist_id,
+                            'type' => $history->tor_id ? 'TOR' : 'LPJ',
+                            'activity_name' => $history->tor ? $history->tor->activity_name : ($history->lpj ? $history->lpj->tor->activity_name : 'N/A'),
+                            'status' => $history->status,
+                            'user' => $history->user ? $history->user->full_name : 'System',
+                            'catatan' => $history->catatan,
+                            'timestamp' => $history->timestamp_aksi,
+                        ];
+                    });
 
-            // User specific stats
-            $userStats = null;
-            if ($user) {
-                $userStats = [
-                    'my_tors' => Tor::where('user_id', $user->user_id)->count(),
-                    'my_lpjs' => Lpj::where('user_id', $user->user_id)->count(),
-                    'my_approved_tors' => Tor::where('user_id', $user->user_id)
-                        ->where('status', 'approved_by_head')
-                        ->count(),
-                    'my_approved_lpjs' => Lpj::where('user_id', $user->user_id)
-                        ->where('status', 'approved_by_head')
-                        ->count(),
+                // Pending approvals
+                $pendingApprovals = [
+                    'tor_submitted' => Tor::where('status', 'submitted')->count(),
+                    'tor_reviewed' => Tor::where('status', 'reviewed_by_secretary')->count(),
+                    'tor_verified' => Tor::where('status', 'verified_by_admin')->count(),
+                    'lpj_submitted' => Lpj::where('status', 'submitted')->count(),
+                    'lpj_reviewed' => Lpj::where('status', 'reviewed_by_secretary')->count(),
+                    'lpj_verified' => Lpj::where('status', 'verified_by_admin')->count(),
                 ];
-            }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+                // User specific stats
+                $userStats = null;
+                if ($user) {
+                    $userStats = [
+                        'my_tors' => Tor::where('user_id', $user->user_id)->count(),
+                        'my_lpjs' => Lpj::where('user_id', $user->user_id)->count(),
+                        'my_approved_tors' => Tor::where('user_id', $user->user_id)
+                            ->where('status', 'approved_by_head')
+                            ->count(),
+                        'my_approved_lpjs' => Lpj::where('user_id', $user->user_id)
+                            ->where('status', 'approved_by_head')
+                            ->count(),
+                    ];
+                }
+
+                // Return summary data
+                return [
                     'overview' => [
                         'total_tor' => $totalTor,
                         'total_lpj' => $totalLpj,
@@ -117,16 +123,24 @@ class DashboardController extends Controller
                     'pending_approvals' => $pendingApprovals,
                     'recent_activities' => $recentActivities,
                     'user_statistics' => $userStats,
-                ]
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $summary,
+                'cached_at' => now(),
             ]);
         } catch (\Exception $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get dashboard summary',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
+
 
     /**
      * Get filtered dashboard data
@@ -218,88 +232,94 @@ class DashboardController extends Controller
     {
         try {
             $year = $request->get('year', date('Y'));
+            $cacheKey = "dashboard_charts_{$year}";
 
-            // Monthly TOR submissions
-            $monthlyTorSubmissions = Tor::selectRaw('EXTRACT(MONTH FROM sub_date) as month, COUNT(*) as count')
-                ->whereYear('sub_date', $year)
-                ->groupBy('month')
-                ->orderBy('month')
-                ->get()
-                ->pluck('count', 'month');
+            // Cache hasil chart selama 10 menit
+            $chartData = Cache::remember($cacheKey, 600, function () use ($year) {
 
-            // Fill missing months with 0
-            $monthlyTorData = [];
-            for ($i = 1; $i <= 12; $i++) {
-                $monthlyTorData[] = [
-                    'month' => date('M', mktime(0, 0, 0, $i, 1)),
-                    'count' => $monthlyTorSubmissions->get($i, 0)
-                ];
-            }
+                // Monthly TOR submissions
+                $monthlyTorSubmissions = Tor::selectRaw('EXTRACT(MONTH FROM sub_date) as month, COUNT(*) as count')
+                    ->whereYear('sub_date', $year)
+                    ->groupBy('month')
+                    ->orderBy('month')
+                    ->get()
+                    ->pluck('count', 'month');
 
-            // Budget usage by category
-            $budgetByCategory = Tor::select('activity_category.category_def', DB::raw('SUM(tor.budget_submitted) as total_budget'))
-                ->join('activity_category', 'tor.category_id', '=', 'activity_category.category_id')
-                ->where('tor.status', 'approved_by_head')
-                ->groupBy('activity_category.category_def')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'category' => $item->category_def,
-                        'amount' => (float) $item->total_budget
+                $monthlyTorData = [];
+                for ($i = 1; $i <= 12; $i++) {
+                    $monthlyTorData[] = [
+                        'month' => date('M', mktime(0, 0, 0, $i, 1)),
+                        'count' => $monthlyTorSubmissions->get($i, 0)
                     ];
-                });
+                }
 
-            // TOR status distribution (for pie chart)
-            $statusDistribution = Tor::select('status', DB::raw('COUNT(*) as count'))
-                ->groupBy('status')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'status' => $item->status,
-                        'count' => $item->count,
-                        'label' => ucwords(str_replace('_', ' ', $item->status))
-                    ];
-                });
+                // Budget usage by category
+                $budgetByCategory = Tor::select('activity_category.category_def', DB::raw('SUM(tor.budget_submitted) as total_budget'))
+                    ->join('activity_category', 'tor.category_id', '=', 'activity_category.category_id')
+                    ->where('tor.status', 'approved_by_head')
+                    ->groupBy('activity_category.category_def')
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'category' => $item->category_def,
+                            'amount' => (float) $item->total_budget
+                        ];
+                    });
 
-            // Budget vs Realization comparison
-            $budgetVsRealization = Tor::select('tor.tor_id', 'tor.activity_name', 'tor.budget_submitted', 'lpj.budget_used')
-                ->leftJoin('lpj', 'tor.tor_id', '=', 'lpj.tor_id')
-                ->where('tor.status', 'approved_by_head')
-                ->whereNotNull('lpj.lpj_id')
-                ->limit(10)
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'activity' => substr($item->activity_name, 0, 30) . '...',
-                        'budget_submitted' => (float) $item->budget_submitted,
-                        'budget_used' => (float) $item->budget_used,
-                        'variance' => (float) ($item->budget_submitted - $item->budget_used)
-                    ];
-                });
+                // TOR status distribution
+                $statusDistribution = Tor::select('status', DB::raw('COUNT(*) as count'))
+                    ->groupBy('status')
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'status' => $item->status,
+                            'count' => $item->count,
+                            'label' => ucwords(str_replace('_', ' ', $item->status))
+                        ];
+                    });
 
-            // Approval timeline (average days)
-            $approvalTimeline = DB::table('status_hist')
-                ->select('status', DB::raw('AVG(EXTRACT(EPOCH FROM (timestamp_aksi - LAG(timestamp_aksi) OVER (PARTITION BY tor_id ORDER BY timestamp_aksi)))/86400) as avg_days'))
-                ->whereNotNull('tor_id')
-                ->groupBy('status')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'stage' => ucwords(str_replace('_', ' ', $item->status)),
-                        'average_days' => round($item->avg_days ?? 0, 1)
-                    ];
-                });
+                // Budget vs Realization
+                $budgetVsRealization = Tor::select('tor.tor_id', 'tor.activity_name', 'tor.budget_submitted', 'lpj.budget_used')
+                    ->leftJoin('lpj', 'tor.tor_id', '=', 'lpj.tor_id')
+                    ->where('tor.status', 'approved_by_head')
+                    ->whereNotNull('lpj.lpj_id')
+                    ->limit(10)
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'activity' => substr($item->activity_name, 0, 30) . '...',
+                            'budget_submitted' => (float) $item->budget_submitted,
+                            'budget_used' => (float) $item->budget_used,
+                            'variance' => (float) ($item->budget_submitted - $item->budget_used)
+                        ];
+                    });
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+                // Approval timeline
+                $approvalTimeline = DB::table('status_hist')
+                    ->select('status', DB::raw('AVG(EXTRACT(EPOCH FROM (timestamp_aksi - LAG(timestamp_aksi) OVER (PARTITION BY tor_id ORDER BY timestamp_aksi)))/86400) as avg_days'))
+                    ->whereNotNull('tor_id')
+                    ->groupBy('status')
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'stage' => ucwords(str_replace('_', ' ', $item->status)),
+                            'average_days' => round($item->avg_days ?? 0, 1)
+                        ];
+                    });
+
+                return [
                     'monthly_submissions' => $monthlyTorData,
                     'budget_by_category' => $budgetByCategory,
                     'status_distribution' => $statusDistribution,
                     'budget_vs_realization' => $budgetVsRealization,
                     'approval_timeline' => $approvalTimeline,
                     'year' => $year,
-                ]
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $chartData
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -309,6 +329,30 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Force refresh dashboard cache (admin only)
+     */
+    public function refreshCache()
+    {
+        try {
+            Cache::forget('dashboard_summary');
+            Cache::forget('dashboard_charts_' . date('Y'));
+            Cache::forget('dashboard_annual_budget_' . date('Y'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dashboard cache refreshed successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to refresh cache',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     /**
      * Get annual budget dashboard data
@@ -348,9 +392,11 @@ class DashboardController extends Controller
             $budgetRemaining = $totalBudget - $budgetUsed;
 
             // Budget by category
-            $budgetByCategory = Tor::select('activity_category.category_def',
-                    DB::raw('SUM(tor.budget_submitted) as allocated'),
-                    DB::raw('COUNT(*) as tor_count'))
+            $budgetByCategory = Tor::select(
+                'activity_category.category_def',
+                DB::raw('SUM(tor.budget_submitted) as allocated'),
+                DB::raw('COUNT(*) as tor_count')
+            )
                 ->join('activity_category', 'tor.category_id', '=', 'activity_category.category_id')
                 ->where('tor.status', 'approved_by_head')
                 ->where('tor.budget_id', $annualBudget->budget_id)

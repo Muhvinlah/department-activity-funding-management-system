@@ -6,9 +6,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Lpj;
 use App\Models\Tor;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\LpjStatusChanged;
 
 class LpjController extends Controller
 {
@@ -315,6 +318,7 @@ class LpjController extends Controller
         try {
             $lpj = Lpj::findOrFail($id);
             $user = Auth::guard('api')->user();
+            $oldStatus = $lpj->status;
 
             if (!$user->isSekretaris()) {
                 return response()->json([
@@ -335,14 +339,40 @@ class LpjController extends Controller
 
             if ($action === 'approved') {
                 $lpj->approveBySecretary($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'reviewed_by_secretary';
                 $message = 'LPJ reviewed by secretary';
+
+                // Notify admins for verification
+                $admins = User::whereHas('role', function ($q) {
+                    $q->where('role_def', 'admin jurusan');
+                })->get();
+                if ($admins->count() > 0) {
+                    Notification::send($admins, new LpjStatusChanged(
+                        $lpj,
+                        $oldStatus,
+                        $newStatus,
+                        $user->full_name,
+                        'LPJ needs admin verification'
+                    ));
+                }
             } elseif ($action === 'rejected') {
                 $lpj->reject($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'rejected';
                 $message = 'LPJ rejected by secretary';
             } else {
                 $lpj->requestRevision($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'needs_revision';
                 $message = 'Revision requested by secretary';
             }
+
+            // Notify LPJ creator about the status change
+            $lpj->user->notify(new LpjStatusChanged(
+                $lpj,
+                $oldStatus,
+                $newStatus,
+                $user->full_name,
+                $catatan ?: $message
+            ));
 
             return response()->json([
                 'success' => true,
@@ -378,6 +408,7 @@ class LpjController extends Controller
         try {
             $lpj = Lpj::findOrFail($id);
             $user = Auth::guard('api')->user();
+            $oldStatus = $lpj->status;
 
             if (!$user->isAdmin()) {
                 return response()->json([
@@ -398,14 +429,40 @@ class LpjController extends Controller
 
             if ($action === 'approved') {
                 $lpj->verifyByAdmin($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'verified_by_admin';
                 $message = 'LPJ verified by admin';
+
+                // Notify department heads for final approval
+                $heads = User::whereHas('role', function ($q) {
+                    $q->where('role_def', 'ketua jurusan');
+                })->get();
+                if ($heads->count() > 0) {
+                    Notification::send($heads, new LpjStatusChanged(
+                        $lpj,
+                        $oldStatus,
+                        $newStatus,
+                        $user->full_name,
+                        'LPJ needs department head approval'
+                    ));
+                }
             } elseif ($action === 'rejected') {
                 $lpj->reject($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'rejected';
                 $message = 'LPJ rejected by admin';
             } else {
                 $lpj->requestRevision($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'needs_revision';
                 $message = 'Revision requested by admin';
             }
+
+            // Notify LPJ creator about the status change
+            $lpj->user->notify(new LpjStatusChanged(
+                $lpj,
+                $oldStatus,
+                $newStatus,
+                $user->full_name,
+                $catatan ?: $message
+            ));
 
             return response()->json([
                 'success' => true,
@@ -441,6 +498,7 @@ class LpjController extends Controller
         try {
             $lpj = Lpj::findOrFail($id);
             $user = Auth::guard('api')->user();
+            $oldStatus = $lpj->status;
 
             if (!$user->isKetua()) {
                 return response()->json([
@@ -461,14 +519,26 @@ class LpjController extends Controller
 
             if ($action === 'approved') {
                 $lpj->approveByHead($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'approved_by_head';
                 $message = 'LPJ approved by department head';
             } elseif ($action === 'rejected') {
                 $lpj->reject($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'rejected';
                 $message = 'LPJ rejected by department head';
             } else {
                 $lpj->requestRevision($user->user_id, $user->role_id, $catatan);
+                $newStatus = 'needs_revision';
                 $message = 'Revision requested by department head';
             }
+
+            // Notify LPJ creator about the status change
+            $lpj->user->notify(new LpjStatusChanged(
+                $lpj,
+                $oldStatus,
+                $newStatus,
+                $user->full_name,
+                $catatan ?: $message
+            ));
 
             return response()->json([
                 'success' => true,

@@ -283,13 +283,15 @@ class TorController extends Controller
             ));
 
             // Notify secretaries
-            $secretaries = User::where('role', 'sekretaris')->get();
+            $secretaries = User::whereHas('role', function ($q) {
+                $q->where('role_def', 'sekretaris jurusan');
+            })->get();
             if ($secretaries->count() > 0) {
                 Notification::send($secretaries, new TorStatusChanged(
                     $tor,
                     $oldStatus,
                     'submitted',
-                    Auth::guard('api')->user()->name,
+                    Auth::guard('api')->user()->full_name,
                     'New TOR submitted for review'
                 ));
             }
@@ -356,13 +358,15 @@ class TorController extends Controller
                 $message = 'TOR reviewed by secretary';
 
                 // Notify admins for verification
-                $admins = User::where('role', 'admin')->get();
+                $admins = User::whereHas('role', function ($q) {
+                    $q->where('role_def', 'admin jurusan');
+                })->get();
                 if ($admins->count() > 0) {
                     Notification::send($admins, new TorStatusChanged(
                         $tor,
                         $oldStatus,
                         $newStatus,
-                        $user->name,
+                        $user->full_name,
                         'TOR needs admin verification'
                     ));
                 }
@@ -446,13 +450,15 @@ class TorController extends Controller
                 $message = 'TOR verified by admin';
 
                 // Notify department heads for final approval
-                $heads = User::where('role', 'kepala_jurusan')->get();
+                $heads = User::whereHas('role', function ($q) {
+                    $q->where('role_def', 'ketua jurusan');
+                })->get();
                 if ($heads->count() > 0) {
                     Notification::send($heads, new TorStatusChanged(
                         $tor,
                         $oldStatus,
                         $newStatus,
-                        $user->name,
+                        $user->full_name,
                         'TOR needs final approval'
                     ));
                 }
@@ -532,19 +538,20 @@ class TorController extends Controller
 
             if ($action === 'approved') {
                 $tor->approveByHead($user->user_id, $user->role_id, $catatan);
-                $newStatus = 'approved';
+                $newStatus = 'approved_by_head';
                 $message = 'TOR approved by department head';
 
                 // Notify all involved parties about final approval
-                $involvedUsers = User::whereIn('role', ['admin', 'sekretaris'])
-                                    ->orWhere('id', $tor->user_id)
-                                    ->get();
+                $allInvolved = User::whereHas('role', function ($q) {
+                    $q->whereIn('role_def', ['admin jurusan', 'sekretaris jurusan']);
+                })->orWhere('id', $tor->user_id)
+                  ->get();
 
-                Notification::send($involvedUsers, new TorStatusChanged(
+                Notification::send($allInvolved, new TorStatusChanged(
                     $tor,
                     $oldStatus,
                     $newStatus,
-                    $user->name,
+                    $user->full_name,
                     'TOR has been fully approved and ready for execution'
                 ));
             } elseif ($action === 'rejected') {
@@ -562,7 +569,7 @@ class TorController extends Controller
                 $tor,
                 $oldStatus,
                 $newStatus,
-                $user->name,
+                $user->full_name,
                 $catatan ?: $message
             ));
 

@@ -29,6 +29,14 @@ class TestDataSeeder extends Seeder
             'role_id' => $mahasiswaRole->role_id,
         ]);
 
+        $mahasiswa = User::create([
+            'user_id' => '2207412014',
+            'full_name' => 'Muhammad Ervin Fadillah',
+            'email' => 'muhammad.ervin.fadillah.tik22@mhsw.pnj.ac.id',
+            'password' => bcrypt('password321'),
+            'role_id' => $mahasiswaRole->role_id,
+        ]);
+
         $sekretaris = User::create([
             'user_id' => '1234567891',
             'full_name' => 'Jane Secretary',

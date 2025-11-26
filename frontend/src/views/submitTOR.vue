@@ -1,8 +1,8 @@
 <template>
   <div class="min-h-screen bg-[#F6F5F4] py-12 px-4">
     <div class="max-w-2xl mx-auto bg-[#0D7D90] rounded-2xl shadow-md p-8 flex flex-col items-center">
-      <h1 class="text-3xl font-bold text-[#f6f5f4] mb-2">Pengajuan TOR</h1>
-      <p class="text-[#f6f5f4] mb-8">Silakan lengkapi form di bawah untuk mengajukan TOR baru</p>
+      <h1 class="text-3xl font-bold text-[#f6f5f4] mb-2">{{ isEditing ? 'Edit TOR' : 'Pengajuan TOR' }}</h1>
+      <p class="text-[#f6f5f4] mb-8">{{ isEditing ? 'Silakan perbarui data TOR di bawah ini' : 'Silakan lengkapi form di bawah untuk mengajukan TOR baru' }}</p>
 
       <!-- Success Message -->
       <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
@@ -273,7 +273,7 @@
             :disabled="loading"
             class="flex-1 px-4 py-2 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl hover:bg-[#03D26F]/75 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span v-if="!loading">Simpan Pengajuan</span>
+            <span v-if="!loading">{{ isEditing ? 'Simpan Perubahan' : 'Simpan Pengajuan' }}</span>
             <span v-else>Menyimpan...</span>
           </button>
           <router-link
@@ -289,12 +289,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, watch, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import torService from '@/services/torService';
 import type { TorData } from '@/services/torService';
 
 const router = useRouter();
+const route = useRoute();
+const isEditing = computed(() => !!route.params.id);
+const torId = ref<number | null>(null);
 
 const form = ref<TorData>({
   activity_name: '',
@@ -368,22 +371,46 @@ const handleSubmit = async () => {
   successMessage.value = '';
   errorMessage.value = '';
 
-  const response = await torService.createTor(form.value);
+  try {
+    let response;
+    if (isEditing.value && torId.value) {
+      // Create FormData for update
+      const formData = new FormData();
+      Object.entries(form.value).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+      
+      // Append files if they exist
+      if (attachments.value.rab) {
+        formData.append('rab_file', attachments.value.rab);
+      }
+      if (attachments.value.supporting) {
+        formData.append('supporting_file', attachments.value.supporting);
+      }
 
-  loading.value = false;
-
-  if (response.success) {
-    successMessage.value = response.message || 'TOR berhasil dibuat!';
-    setTimeout(() => {
-      router.push('/app/home');
-    }, 1500);
-  } else {
-    if (response.errors) {
-      errors.value = response.errors;
-      errorMessage.value = 'Ada kesalahan pada form. Silakan periksa kembali.';
+      response = await torService.updateTor(torId.value, formData);
     } else {
-      errorMessage.value = response.message || 'Terjadi kesalahan saat membuat TOR';
+      // Create TOR
+      response = await torService.createTor(form.value);
     }
+
+    if (response.success) {
+      successMessage.value = response.message || (isEditing.value ? 'TOR berhasil diperbarui!' : 'TOR berhasil dibuat!');
+      setTimeout(() => {
+        router.push('/app/home');
+      }, 1500);
+    } else {
+      if (response.errors) {
+        errors.value = response.errors;
+        errorMessage.value = 'Ada kesalahan pada form. Silakan periksa kembali.';
+      } else {
+        errorMessage.value = response.message || (isEditing.value ? 'Terjadi kesalahan saat memperbarui TOR' : 'Terjadi kesalahan saat membuat TOR');
+      }
+    }
+  } catch (error) {
+    errorMessage.value = 'Terjadi kesalahan jaringan';
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -411,5 +438,37 @@ onMounted(async () => {
       form.value.budget_id = match.budget_id;
     }
   });
+
+  // Check if editing
+  if (route.params.id) {
+    torId.value = parseInt(route.params.id as string);
+    loading.value = true;
+    try {
+      const response = await torService.getTor(torId.value);
+      if (response.success && response.data) {
+        const data = response.data;
+        form.value = {
+          activity_name: data.activity_name,
+          activity_background: data.activity_background,
+          activity_purpose: data.activity_purpose,
+          participant: data.participant,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          budget_submitted: data.budget_submitted,
+          pic: data.pic,
+          category_id: data.category_id,
+          budget_id: data.budget_id,
+        };
+        // Note: Files cannot be pre-populated in file inputs for security reasons
+        // We could show existing file names if needed
+      } else {
+        errorMessage.value = 'Gagal memuat data TOR';
+      }
+    } catch (error) {
+      errorMessage.value = 'Terjadi kesalahan saat memuat data';
+    } finally {
+      loading.value = false;
+    }
+  }
 });
 </script>

@@ -90,11 +90,11 @@ class TorController extends Controller
                 'category_id' => $request->category_id,
                 'budget_id' => $request->budget_id,
                 'user_id' => Auth::guard('api')->id(),
-                'status' => 'under_review',
-                'current_stage' => 'under_review',
+                'status' => 'submitted',
+                'current_stage' => 'submitted',
             ]);
 
-            $tor->addStatusHistory('under_review', 'TOR submitted for review', Auth::guard('api')->id());
+            $tor->addStatusHistory('submitted', 'TOR submitted', Auth::guard('api')->id());
 
             return response()->json([
                 'success' => true,
@@ -168,8 +168,8 @@ class TorController extends Controller
                 ], 403);
             }
 
-            // Only allow update if status is draft or needs_revision
-            if (!in_array($tor->status, ['draft', 'needs_revision'])) {
+            // Only allow update if status is submitted or needs_revision
+        if (!in_array($tor->status, ['submitted', 'needs_revision', 'needs_revision_by_secretary', 'needs_revision_by_admin', 'needs_revision_by_head'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot update TOR in current status'
@@ -180,15 +180,49 @@ class TorController extends Controller
             $tor->update($request->all());
             $tor->addStatusHistory('updated', 'TOR updated', Auth::guard('api')->id());
 
-            // Send notification if status changed from needs_revision to draft
-            if ($oldStatus === 'needs_revision' && $tor->status === 'draft') {
+            // If TOR was in revision, automatically resubmit
+            if (str_contains($oldStatus, 'needs_revision')) {
+                $newStatus = $tor->resubmit(Auth::guard('api')->id());
+                
+                // Notify TOR creator
                 $tor->user->notify(new TorStatusChanged(
-    $tor,
-    $oldStatus,
-    'draft',
-    Auth::guard('api')->user()->full_name,
-    'TOR has been revised and ready for resubmission'
-));
+                    $tor,
+                    $oldStatus,
+                    $newStatus,
+                    Auth::guard('api')->user()->full_name,
+                    'TOR has been resubmitted after revision'
+                ));
+
+                // Notify appropriate reviewers
+                $reviewers = null;
+                $notificationMessage = '';
+                
+                if ($newStatus === 'under_review') {
+                    $reviewers = User::whereHas('role', function ($q) {
+                        $q->where('role_def', 'sekretaris jurusan');
+                    })->get();
+                    $notificationMessage = 'TOR resubmitted after revision';
+                } elseif ($newStatus === 'reviewed_by_secretary') {
+                    $reviewers = User::whereHas('role', function ($q) {
+                        $q->where('role_def', 'admin jurusan');
+                    })->get();
+                    $notificationMessage = 'TOR resubmitted after revision - needs admin verification';
+                } elseif ($newStatus === 'verified_by_admin') {
+                    $reviewers = User::whereHas('role', function ($q) {
+                        $q->where('role_def', 'ketua jurusan');
+                    })->get();
+                    $notificationMessage = 'TOR resubmitted after revision - needs final approval';
+                }
+
+                if ($reviewers && $reviewers->count() > 0) {
+                    Notification::send($reviewers, new TorStatusChanged(
+                        $tor,
+                        $oldStatus,
+                        $newStatus,
+                        Auth::guard('api')->user()->full_name,
+                        $notificationMessage
+                    ));
+                }
             }
 
             return response()->json([
@@ -221,13 +255,13 @@ class TorController extends Controller
                 ], 403);
             }
 
-            // Only allow delete if status is draft
-            if ($tor->status !== 'draft') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot delete TOR that has been submitted'
-                ], 400);
-            }
+        // Only allow delete if status is submitted or needs_revision
+        if (!in_array($tor->status, ['submitted', 'needs_revision', 'needs_revision_by_secretary', 'needs_revision_by_admin', 'needs_revision_by_head'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete TOR that is under review or approved'
+            ], 400);
+        }
 
             $tor->delete();
 
@@ -261,40 +295,75 @@ class TorController extends Controller
                 ], 403);
             }
 
-            // Only allow submit if status is draft or needs_revision
-            if (!in_array($oldStatus, ['draft', 'needs_revision'])) {
+            // Only allow submit if status is submitted or needs_revision (any variant)
+        if (!in_array($oldStatus, [
+            'submitted', 
+            'needs_revision',
+            'needs_revision_by_secretary',
+            'needs_revision_by_admin',
+            'needs_revision_by_head'
+        ])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot submit TOR in current status'
                 ], 400);
             }
 
-            // Update status and submit
-            $tor->update(['status' => 'submitted']);
+            // Determine if this is a resubmission
+        $isResubmission = str_contains($oldStatus, 'needs_revision');
+
+        if ($isResubmission) {
+            // Resubmit to the appropriate reviewer
+            $newStatus = $tor->resubmit(Auth::guard('api')->id());
+        } else {
+            // New submission
+            $tor->update(['status' => 'under_review']);
             $tor->submit(Auth::guard('api')->id());
+            $newStatus = 'under_review';
+        }
 
-            // Send notification to creator
-            $tor->user->notify(new TorStatusChanged(
-                $tor,
-                $oldStatus,
-                'submitted',
-                Auth::guard('api')->user()->name,
-                'TOR has been submitted for review'
-            ));
+        // Notify TOR creator
+        $tor->user->notify(new TorStatusChanged(
+            $tor,
+            $oldStatus,
+            $newStatus,
+            Auth::guard('api')->user()->name,
+            $isResubmission ? 'TOR has been resubmitted for review' : 'TOR has been submitted for review'
+        ));
 
+        // Notify appropriate reviewers based on new status
+        $reviewers = null;
+        $notificationMessage = '';
+        
+        if ($newStatus === 'under_review') {
             // Notify secretaries
-            $secretaries = User::whereHas('role', function ($q) {
+            $reviewers = User::whereHas('role', function ($q) {
                 $q->where('role_def', 'sekretaris jurusan');
             })->get();
-            if ($secretaries->count() > 0) {
-                Notification::send($secretaries, new TorStatusChanged(
-                    $tor,
-                    $oldStatus,
-                    'submitted',
-                    Auth::guard('api')->user()->full_name,
-                    'New TOR submitted for review'
-                ));
-            }
+            $notificationMessage = $isResubmission ? 'TOR resubmitted after revision' : 'New TOR submitted for review';
+        } elseif ($newStatus === 'reviewed_by_secretary') {
+            // Notify admins
+            $reviewers = User::whereHas('role', function ($q) {
+                $q->where('role_def', 'admin jurusan');
+            })->get();
+            $notificationMessage = 'TOR resubmitted after revision - needs admin verification';
+        } elseif ($newStatus === 'verified_by_admin') {
+            // Notify heads
+            $reviewers = User::whereHas('role', function ($q) {
+                $q->where('role_def', 'ketua jurusan');
+            })->get();
+            $notificationMessage = 'TOR resubmitted after revision - needs final approval';
+        }
+
+        if ($reviewers && $reviewers->count() > 0) {
+            Notification::send($reviewers, new TorStatusChanged(
+                $tor,
+                $oldStatus,
+                $newStatus,
+                Auth::guard('api')->user()->full_name,
+                $notificationMessage
+            ));
+        }    
 
             return response()->json([
                 'success' => true,
@@ -342,10 +411,10 @@ class TorController extends Controller
             }
 
             // Check if TOR is in correct stage
-            if ($tor->status !== 'submitted') {
+            if ($tor->status !== 'under_review') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'TOR is not in submitted stage'
+                    'message' => 'TOR is not in under_review stage'
                 ], 400);
             }
 
@@ -375,9 +444,9 @@ class TorController extends Controller
                 $newStatus = 'rejected';
                 $message = 'TOR rejected by secretary';
             } else {
-                $tor->requestRevision($user->user_id, $user->role_id, $catatan);
-                $newStatus = 'needs_revision';
-                $message = 'Revision requested by secretary';
+            $tor->requestRevision($user->user_id, $user->role_id, $catatan, $oldStatus);
+            $newStatus = $tor->status; // Get the role-specific revision status
+            $message = 'Revision requested by secretary';
             }
 
             // Notify TOR creator about the status change
@@ -467,9 +536,9 @@ class TorController extends Controller
                 $newStatus = 'rejected';
                 $message = 'TOR rejected by admin';
             } else {
-                $tor->requestRevision($user->user_id, $user->role_id, $catatan);
-                $newStatus = 'needs_revision';
-                $message = 'Revision requested by admin';
+            $tor->requestRevision($user->user_id, $user->role_id, $catatan, $oldStatus);
+            $newStatus = $tor->status; // Get the role-specific revision status
+            $message = 'Revision requested by admin';
             }
 
             // Notify TOR creator about the status change
@@ -477,7 +546,7 @@ class TorController extends Controller
                 $tor,
                 $oldStatus,
                 $newStatus,
-                $user->name,
+                $user->full_name,
                 $catatan ?: $message
             ));
 
@@ -544,7 +613,7 @@ class TorController extends Controller
                 // Notify all involved parties about final approval
                 $allInvolved = User::whereHas('role', function ($q) {
                     $q->whereIn('role_def', ['admin jurusan', 'sekretaris jurusan']);
-                })->orWhere('id', $tor->user_id)
+                })->orWhere('user_id', $tor->user_id)
                   ->get();
 
                 Notification::send($allInvolved, new TorStatusChanged(
@@ -559,9 +628,9 @@ class TorController extends Controller
                 $newStatus = 'rejected';
                 $message = 'TOR rejected by department head';
             } else {
-                $tor->requestRevision($user->user_id, $user->role_id, $catatan);
-                $newStatus = 'needs_revision';
-                $message = 'Revision requested by department head';
+            $tor->requestRevision($user->user_id, $user->role_id, $catatan, $oldStatus);
+            $newStatus = $tor->status; // Get the role-specific revision status
+            $message = 'Revision requested by department head';
             }
 
             // Always notify TOR creator about the status change

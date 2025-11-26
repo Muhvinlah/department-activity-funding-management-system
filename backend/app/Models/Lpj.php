@@ -64,11 +64,11 @@ class Lpj extends Model
      */
     public function submit($userId)
     {
-        $this->status = 'submitted';
-        $this->current_stage = 'submitted';
+        $this->status = 'under_review';
+        $this->current_stage = 'under_review';
         $this->save();
 
-        $this->addStatusHistory('submitted', 'LPJ submitted for approval', $userId);
+        $this->addStatusHistory('under_review', 'LPJ submitted for approval', $userId);
     }
 
     /**
@@ -175,13 +175,50 @@ class Lpj extends Model
     /**
      * Request revision
      */
-    public function requestRevision($userId, $roleId, $catatan)
+    public function requestRevision($userId, $roleId, $catatan, $currentStatus = null)
     {
-        $this->status = 'needs_revision';
-        $this->current_stage = 'needs_revision';
+        // Determine which stage requested revision based on current status
+        $revisionStatus = 'needs_revision'; // Default fallback
+        
+        if ($currentStatus === 'under_review') {
+            $revisionStatus = 'needs_revision_by_secretary';
+        } elseif ($currentStatus === 'reviewed_by_secretary') {
+            $revisionStatus = 'needs_revision_by_admin';
+        } elseif ($currentStatus === 'verified_by_admin') {
+            $revisionStatus = 'needs_revision_by_head';
+        }
+        
+        $this->status = $revisionStatus;
+        $this->current_stage = $revisionStatus;
         $this->save();
 
-        $this->addStatusHistory('needs_revision', $catatan, $userId);
+        $this->addStatusHistory($revisionStatus, $catatan, $userId);
         $this->addApproval($userId, $roleId, 'request_revision', $catatan);
+    }
+
+    /**
+     * Resubmit LPJ after revision
+     */
+    public function resubmit($userId)
+    {
+        // Determine where to send based on current revision status
+        $newStatus = 'under_review'; // Default to secretary stage
+        
+        if ($this->status === 'needs_revision_by_admin') {
+            $newStatus = 'reviewed_by_secretary'; // Back to admin stage
+        } elseif ($this->status === 'needs_revision_by_head') {
+            $newStatus = 'verified_by_admin'; // Back to head stage
+        } elseif ($this->status === 'needs_revision_by_secretary') {
+            $newStatus = 'under_review'; // Back to secretary stage
+        }
+        
+        $this->status = $newStatus;
+        $this->current_stage = $newStatus;
+        $this->sub_date = now(); // Update submission date
+        $this->save();
+        
+        $this->addStatusHistory($newStatus, 'LPJ resubmitted after revision', $userId);
+        
+        return $newStatus;
     }
 }

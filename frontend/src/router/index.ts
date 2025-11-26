@@ -18,13 +18,19 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true },
     children: [
       {
+        path: 'account',
+        name: 'AccountSettings',
+        component: () => import('../views/accountProfile.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'home',
         name: 'Home',
         component: () => import('../views/Home.vue'),
         meta: { requiresAuth: true }
       },
       {
-        path: 'tor',
+        path: 'tor/:id?',
         name: 'TOR',
         component: () => import('../views/submitTOR.vue'),
         meta: { requiresAuth: true }
@@ -45,13 +51,13 @@ const routes: Array<RouteRecordRaw> = [
         path: 'approval/tor/:id',
         name: 'ReviewTOR',
         component: () => import('../views/ReviewTOR.vue'),
-        meta: { requiresAuth: true, roles: ADMIN_ROLES }
+        meta: { requiresAuth: true }
       },
       {
         path: 'approval/lpj/:id',
         name: 'ReviewLPJ',
         component: () => import('../views/ReviewLPJ.vue'),
-        meta: { requiresAuth: true, roles: ADMIN_ROLES }
+        meta: { requiresAuth: true }
       }
     ]
   },

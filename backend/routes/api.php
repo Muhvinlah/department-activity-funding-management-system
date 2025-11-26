@@ -1,6 +1,7 @@
 <?php
 // routes/api.php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TorController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AnnualBudgetController;
 use App\Http\Controllers\Api\ActivityCategoryController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\AccountController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -19,6 +21,12 @@ Route::middleware('auth:api')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'getProfile']);
+
+    // Account
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+    Route::put('/account', [AccountController::class, 'update']);
 
     // TOR routes
     Route::apiResource('tor', TorController::class);
@@ -63,14 +71,3 @@ Route::middleware('auth:api')->group(function () {
     Route::post('lpj/create-with-prefill', [LpjController::class, 'createWithPreFill']);
 });
 
-// Test route - remove in production
-Route::post('/test-notification', function () {
-    $user = App\Models\User::first();
-    $tor = App\Models\Tor::first();
-
-    $user->notify(new App\Notifications\TorStatusChanged(
-        $tor, 'draft', 'submitted', 'Test User'
-    ));
-
-    return response()->json(['message' => 'Notification sent!']);
-});

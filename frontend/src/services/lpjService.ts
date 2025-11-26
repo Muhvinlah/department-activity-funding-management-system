@@ -24,6 +24,7 @@ class LpjService {
     const authStore = useAuthStore();
     return {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       'Authorization': `Bearer ${authStore.token}`
     };
   }
@@ -292,6 +293,99 @@ class LpjService {
       return {
         success: true,
         message: result.message || 'LPJ deleted successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
+  async reviewBySecretary(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string): Promise<LpjResponse> {
+    try {
+      const response = await fetch(`${API_URL}/lpj/${id}/review-secretary`, {
+        method: 'POST',
+        headers: this.getAuthHeader(),
+        body: JSON.stringify({ action, catatan })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to review LPJ',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'LPJ reviewed successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
+  async verifyByAdmin(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string): Promise<LpjResponse> {
+    try {
+      const response = await fetch(`${API_URL}/lpj/${id}/verify-admin`, {
+        method: 'POST',
+        headers: this.getAuthHeader(),
+        body: JSON.stringify({ action, catatan })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to verify LPJ',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'LPJ verified successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
+  async approveByHead(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string): Promise<LpjResponse> {
+    try {
+      const response = await fetch(`${API_URL}/lpj/${id}/approve-head`, {
+        method: 'POST',
+        headers: this.getAuthHeader(),
+        body: JSON.stringify({ action, catatan })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to approve LPJ',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'LPJ approved successfully',
+        data: result.data
       };
     } catch (error: any) {
       return {

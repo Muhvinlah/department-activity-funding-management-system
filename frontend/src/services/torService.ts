@@ -29,6 +29,7 @@ class TorService {
     const authStore = useAuthStore();
     return {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       'Authorization': `Bearer ${authStore.token}`
     };
   }
@@ -64,12 +65,27 @@ class TorService {
     }
   }
 
-  async updateTor(id: number, data: Partial<TorData>): Promise<TorResponse> {
+  async updateTor(id: number, data: FormData): Promise<TorResponse> {
     try {
+      // For file uploads with PUT/PATCH in Laravel, we often need to use POST with _method field
+      // or just handle it as POST if the backend route supports it.
+      // Assuming standard Laravel resource controller which expects PUT/PATCH for updates.
+      // However, PHP has issues reading files from PUT requests.
+      // Best practice for Laravel API file updates: POST with _method: 'PUT'
+      
+      data.append('_method', 'PUT');
+
+      const authStore = useAuthStore();
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      };
+      // Do NOT set Content-Type for FormData, browser does it automatically with boundary
+
       const response = await fetch(`${API_URL}/tor/${id}`, {
-        method: 'PUT',
-        headers: this.getAuthHeader(),
-        body: JSON.stringify(data)
+        method: 'POST',
+        headers: headers,
+        body: data
       });
 
       const result = await response.json();
@@ -136,6 +152,34 @@ class TorService {
         return {
           success: false,
           message: result.message || 'Failed to fetch TORs'
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
+  async getMyApprovedTors(): Promise<TorResponse> {
+    try {
+      const response = await fetch(`${API_URL}/tor?my_tors=true&status=approved_by_head`, {
+        method: 'GET',
+        headers: this.getAuthHeader()
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to fetch approved TORs'
         };
       }
 
@@ -233,6 +277,99 @@ class TorService {
       return {
         success: true,
         message: result.message || 'TOR deleted successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
+  async reviewBySecretary(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string): Promise<TorResponse> {
+    try {
+      const response = await fetch(`${API_URL}/tor/${id}/review-secretary`, {
+        method: 'POST',
+        headers: this.getAuthHeader(),
+        body: JSON.stringify({ action, catatan })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to review TOR',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'TOR reviewed successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
+  async verifyByAdmin(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string): Promise<TorResponse> {
+    try {
+      const response = await fetch(`${API_URL}/tor/${id}/verify-admin`, {
+        method: 'POST',
+        headers: this.getAuthHeader(),
+        body: JSON.stringify({ action, catatan })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to verify TOR',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'TOR verified successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
+  async approveByHead(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string): Promise<TorResponse> {
+    try {
+      const response = await fetch(`${API_URL}/tor/${id}/approve-head`, {
+        method: 'POST',
+        headers: this.getAuthHeader(),
+        body: JSON.stringify({ action, catatan })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to approve TOR',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'TOR approved successfully',
+        data: result.data
       };
     } catch (error: any) {
       return {

@@ -458,13 +458,16 @@ const formatSchedule = (schedule: string) => {
 
 const formatStatus = (status: string) => {
   const statusMap: Record<string, string> = {
-    'submitted': 'Submitted',
-    'under_review': 'Under Review',
-    'reviewed_by_secretary': 'Reviewed by Secretary',
-    'verified_by_admin': 'Verified by Admin',
-    'approved_by_head': 'Approved by Head',
-    'needs_revision': 'Needs Revision',
-    'rejected': 'Rejected'
+    'submitted': 'Diajukan',
+    'under_review': 'Sedang Ditinjau Sekretaris',
+    'reviewed_by_secretary': 'Ditinjau Sekretaris',
+    'verified_by_admin': 'Diverifikasi Admin',
+    'approved_by_head': 'Disetujui Ketua Jurusan',
+    'needs_revision': 'Perlu Revisi',
+    'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
+    'needs_revision_by_admin': 'Perlu Revisi (Admin)',
+    'needs_revision_by_head': 'Perlu Revisi (Ketua Jurusan)',
+    'rejected': 'Ditolak'
   };
   return statusMap[status] || status;
 };
@@ -472,11 +475,14 @@ const formatStatus = (status: string) => {
 const formatStudentStatus = (status: string) => {
   const statusMap: Record<string, string> = {
     'submitted': 'Diajukan',
-    'under_review': 'Diperiksa Sekretaris Jurusan',
-    'reviewed_by_secretary': 'Diperiksa Sekretaris Jurusan',
+    'under_review': 'Sedang Ditinjau Sekretaris',
+    'reviewed_by_secretary': 'Ditinjau Sekretaris',
     'verified_by_admin': 'Diverifikasi Admin',
-    'approved_by_head': 'Disetujui',
+    'approved_by_head': 'Disetujui Ketua Jurusan',
     'needs_revision': 'Perlu Revisi',
+    'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
+    'needs_revision_by_admin': 'Perlu Revisi (Admin)',
+    'needs_revision_by_head': 'Perlu Revisi (Ketua Jurusan)',
     'rejected': 'Ditolak'
   };
   return statusMap[status] || status;
@@ -490,6 +496,9 @@ const getStatusClasses = (status: string) => {
     'verified_by_admin': 'bg-indigo-100 text-indigo-800',
     'approved_by_head': 'bg-green-100 text-green-800',
     'needs_revision': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_secretary': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_admin': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_head': 'bg-orange-100 text-orange-800',
     'rejected': 'bg-red-100 text-red-800'
   };
   return statusClasses[status] || 'bg-gray-100 text-gray-800';
@@ -503,6 +512,9 @@ const getStatusBadgeClass = (status: string) => {
     'verified_by_admin': 'bg-[#FACC15]/25 text-[#FACC15]',
     'approved_by_head': 'bg-[#0BC86F]/25 text-[#0BC86F]',
     'needs_revision': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_secretary': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_admin': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_head': 'bg-orange-100 text-orange-800',
     'rejected': 'bg-[#D80300]/25 text-[#D80300]'
   };
   return statusClasses[status] || 'bg-gray-100 text-gray-800';
@@ -549,9 +561,9 @@ const viewSubmission = (submission: Submission) => {
 
 const viewStudentSubmission = (submission: StudentSubmission) => {
   if (submission.type === 'tor') {
-    router.push(`/app/tor/${submission.id}`);
+    router.push(`/app/approval/tor/${submission.id}`);
   } else {
-    router.push(`/app/lpj/${submission.id}`);
+    router.push(`/app/approval/lpj/${submission.id}`);
   }
 };
 
@@ -607,6 +619,23 @@ const downloadCSV = (csv: string, filename: string) => {
   document.body.removeChild(link);
 };
 
+const getLatestRevisionNote = (approvals: any[]) => {
+  if (!approvals || approvals.length === 0) return undefined;
+  
+  // Filter for revision requests and get the latest one
+  const revisionApprovals = approvals
+    .filter((approval: any) => approval.action === 'request_revision')
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  
+  if (revisionApprovals.length > 0) {
+    const latestRevision = revisionApprovals[0];
+    const reviewerName = latestRevision.user?.full_name || latestRevision.role?.role_name || 'Reviewer';
+    return `${reviewerName}: ${latestRevision.catatan || 'No comment'}`;
+  }
+  
+  return undefined;
+};
+
 const fetchSubmissions = async () => {
   isLoading.value = true;
   try {
@@ -625,7 +654,7 @@ const fetchSubmissions = async () => {
         schedule: `${tor.start_date} - ${tor.end_date}`,
         status: tor.status,
         type: 'tor',
-        revisionNotes: tor.revision_notes
+        revisionNotes: getLatestRevisionNote(tor.approvals)
       }));
       
       const lpjSubmissions = (lpjResponse.data || []).map((lpj: any) => ({
@@ -635,7 +664,7 @@ const fetchSubmissions = async () => {
         schedule: `${lpj.actual_date} - ${lpj.actual_date}`,
         status: lpj.status,
         type: 'lpj',
-        revisionNotes: lpj.revision_notes
+        revisionNotes: getLatestRevisionNote(lpj.approvals)
       }));
       
       console.log('Student TOR Submissions:', torSubmissions);

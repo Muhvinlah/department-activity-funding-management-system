@@ -1,5 +1,4 @@
 <?php
-// database/migrations/2024_01_01_000001_create_enum_types.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;

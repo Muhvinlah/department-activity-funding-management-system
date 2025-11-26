@@ -87,10 +87,10 @@ class DashboardController extends Controller
 
                 // Pending approvals
                 $pendingApprovals = [
-                    'tor_submitted' => Tor::where('status', 'submitted')->count(),
+                    'tor_submitted' => Tor::where('status', 'under_review')->count(),
                     'tor_reviewed' => Tor::where('status', 'reviewed_by_secretary')->count(),
                     'tor_verified' => Tor::where('status', 'verified_by_admin')->count(),
-                    'lpj_submitted' => Lpj::where('status', 'submitted')->count(),
+                    'lpj_submitted' => Lpj::where('status', 'under_review')->count(),
                     'lpj_reviewed' => Lpj::where('status', 'reviewed_by_secretary')->count(),
                     'lpj_verified' => Lpj::where('status', 'verified_by_admin')->count(),
                 ];
@@ -384,7 +384,7 @@ class DashboardController extends Controller
                 ->sum('budget_submitted');
 
             // Budget pending (submitted but not yet approved)
-            $budgetPending = Tor::whereIn('status', ['submitted', 'reviewed_by_secretary', 'verified_by_admin'])
+            $budgetPending = Tor::whereIn('status', ['under_review', 'reviewed_by_secretary', 'verified_by_admin'])
                 ->where('budget_id', $annualBudget->budget_id)
                 ->sum('budget_submitted');
 
@@ -465,7 +465,7 @@ class DashboardController extends Controller
                         'total_approved_tors' => Tor::where('status', 'approved_by_head')
                             ->where('budget_id', $annualBudget->budget_id)
                             ->count(),
-                        'total_pending_tors' => Tor::whereIn('status', ['submitted', 'reviewed_by_secretary', 'verified_by_admin'])
+                        'total_pending_tors' => Tor::whereIn('status', ['under_review', 'reviewed_by_secretary', 'verified_by_admin'])
                             ->where('budget_id', $annualBudget->budget_id)
                             ->count(),
                         'average_budget_per_activity' => Tor::where('status', 'approved_by_head')

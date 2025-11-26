@@ -6,7 +6,7 @@
         <div class="flex justify-between items-start mb-4">
           <div>
             <h1 class="text-3xl font-bold text-[#f6f5f4] mb-2">Review TOR</h1>
-            <p class="text-[#f6f5f4]">Review submitted Term of Reference</p>
+            <p class="text-[#f6f5f4]">Review Term of Reference</p>
           </div>
           <span :class="getStatusBadgeClass(tor?.status)" class="px-4 py-2 rounded-xl text-sm font-medium">
             {{ formatStatus(tor?.status) }}
@@ -179,9 +179,12 @@
               </p>
             </div>
           </div>
+          <div v-else class="text-gray-500 text-center py-4">
+            Belum ada komentar dari reviewer
+          </div>
 
-          <!-- Add Comment -->
-          <div class="border-t pt-4">
+          <!-- Add Comment (Only for Reviewers) -->
+          <div v-if="isReviewer" class="border-t pt-4">
             <p class="text-sm font-medium text-gray-700 mb-2">Tambah Komentar & Keputusan</p>
             <textarea
               v-model="newComment"
@@ -194,25 +197,64 @@
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex gap-4 justify-end">
-          <div v-if="tor?.status === 'approved_by_head'" class="w-full bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-            <p class="text-blue-700 font-medium">✓ Sudah disetujui oleh Ketua Jurusan. Tidak dapat diubah.</p>
-          </div>
-          <div v-else class="flex gap-4 w-full justify-end">
+        <!-- Success Message -->
+      <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
+        <p class="text-green-700 font-medium">✓ {{ successMessage }}</p>
+      </div>
+
+      <!-- Error Message -->
+      <div v-if="errorMessage" class="mb-4 p-4 bg-[#D80300] border border-red-200 rounded-lg">
+        <p class="text-[#F6F5F4] font-medium">✗ {{ errorMessage }}</p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-4 pt-4 border-t border-[#F6F5F4]/20">
+          <!-- Reviewer Actions -->
+          <template v-if="isReviewer">
+            <div v-if="tor?.status === 'approved_by_head'" class="w-full bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <p class="text-blue-700 font-medium">✓ Sudah disetujui oleh Ketua Jurusan. Tidak dapat diubah.</p>
+            </div>
+            <div v-else class="flex gap-4 w-full justify-end">
+              <button
+                @click="rejectSubmission"
+                :disabled="isSubmitting"
+                class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span v-if="isSubmitting">Processing...</span>
+                <span v-else>Tolak</span>
+              </button>
+              <button
+                @click="approveSubmission"
+                :disabled="isSubmitting"
+                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span v-if="isSubmitting">Processing...</span>
+                <span v-else>Setujui</span>
+              </button>
+            </div>
+          </template>
+
+          <!-- User Actions (Students/Lecturers) -->
+          <template v-else>
+            <!-- Edit TOR button when needs revision -->
             <button
-              @click="rejectSubmission"
-              class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              v-if="needsRevision"
+              @click="editTOR"
+              class="px-6 py-2 bg-[#0d7d90] text-white rounded-lg hover:bg-[#3d97a6]"
             >
-              Tolak
+              Edit TOR
             </button>
+            
+            <!-- Create LPJ button when approved by head -->
             <button
-              @click="approveSubmission"
+              v-if="tor?.status === 'approved_by_head'"
+              @click="createLPJ"
               class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
-              Setujui
+              Buat LPJ
             </button>
-          </div>
+          </template>
+
           <button
             @click="goBack"
             class="px-6 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
@@ -226,11 +268,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import torService from '@/services/torService';
-import { USER_ROLES } from '@/constants/userRoles';
+import { USER_ROLES, ADMIN_ROLES } from '@/constants/userRoles';
 
 interface TOR {
   tor_id: number;
@@ -248,6 +290,17 @@ interface TOR {
     file_path: string;
     file_size: number;
   }>;
+  approvals?: Array<{
+    user?: {
+      full_name: string;
+    };
+    role?: {
+      role_name: string;
+    };
+    created_at: string;
+    status: string;
+    catatan: string;
+  }>;
 }
 
 interface Comment {
@@ -263,10 +316,26 @@ const authStore = useAuthStore();
 
 const tor = ref<TOR | null>(null);
 const isLoading = ref(false);
+const successMessage = ref('');
 const errorMessage = ref('');
 const comments = ref<Comment[]>([]);
 const newComment = ref('');
 const commentStatus = ref('');
+
+// Check if current user is a reviewer
+const isReviewer = computed(() => {
+  const role = authStore.role;
+  return ADMIN_ROLES.includes(role as any);
+});
+
+// Check if submission needs revision
+const needsRevision = computed(() => {
+  if (!tor.value) return false;
+  return tor.value.status === 'needs_revision' ||
+         tor.value.status === 'needs_revision_by_secretary' ||
+         tor.value.status === 'needs_revision_by_admin' ||
+         tor.value.status === 'needs_revision_by_head';
+});
 const isSubmitting = ref(false);
 
 // Determine initial comment status based on current role
@@ -360,12 +429,14 @@ const isPDF = (fileName: string) => {
 
 const getStatusBadgeClass = (status?: string) => {
   const statusClasses: Record<string, string> = {
-    'submitted': 'bg-yellow-100 text-yellow-800',
     'under_review': 'bg-blue-100 text-blue-800',
     'reviewed_by_secretary': 'bg-purple-100 text-purple-800',
     'verified_by_admin': 'bg-indigo-100 text-indigo-800',
     'approved_by_head': 'bg-green-100 text-green-800',
     'needs_revision': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_secretary': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_admin': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_head': 'bg-orange-100 text-orange-800',
     'rejected': 'bg-red-100 text-red-800'
   };
   return statusClasses[status || ''] || 'bg-gray-100 text-gray-800';
@@ -374,25 +445,17 @@ const getStatusBadgeClass = (status?: string) => {
 const formatStatus = (status?: string) => {
   if (!status) return 'Unknown';
   
-  // Handle role-specific revision statuses
-  if (status.includes('needs_revision_by_')) {
-    if (status.includes('sekretaris_jurusan')) {
-      return 'Needs Revision by Sekretaris Jurusan';
-    } else if (status.includes('admin_jurusan')) {
-      return 'Needs Revision by Admin Jurusan';
-    } else if (status.includes('ketua_jurusan')) {
-      return 'Needs Revision by Ketua Jurusan';
-    }
-  }
-
   const statusMap: Record<string, string> = {
-    'submitted': 'Submitted',
-    'under_review': 'Under Review',
-    'reviewed_by_secretary': 'Reviewed by Secretary',
-    'verified_by_admin': 'Verified by Admin',
-    'approved_by_head': 'Approved by Head',
-    'needs_revision': 'Needs Revision',
-    'rejected': 'Rejected'
+    'submitted': 'Diajukan',
+    'under_review': 'Sedang Ditinjau Sekretaris',
+    'reviewed_by_secretary': 'Ditinjau Sekretaris',
+    'verified_by_admin': 'Diverifikasi Admin',
+    'approved_by_head': 'Disetujui Ketua Jurusan',
+    'needs_revision': 'Perlu Revisi',
+    'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
+    'needs_revision_by_admin': 'Perlu Revisi (Admin)',
+    'needs_revision_by_head': 'Perlu Revisi (Ketua Jurusan)',
+    'rejected': 'Ditolak'
   };
   return statusMap[status] || status;
 };
@@ -430,39 +493,46 @@ const submitComment = async () => {
 const approveSubmission = async () => {
   if (!tor.value) return;
   if (!newComment.value.trim()) {
-    alert('Please add a comment before approving');
+    errorMessage.value = 'Mohon tambahkan komentar sebelum menyetujui';
     return;
   }
 
   isSubmitting.value = true;
+  errorMessage.value = '';
+  successMessage.value = '';
   try {
-    const approvedStatus = getApprovedStatus();
-    
-    // Add approval comment
-    comments.value.push({
-      reviewer_name: getRoleDisplayName(),
-      created_at: new Date().toISOString(),
-      status: approvedStatus,
-      message: `Approved: ${newComment.value}`
-    });
+    const role = authStore.role;
+    let response;
 
-    // TODO: Send to backend API
-    // await torService.updateTor(tor.value.tor_id, { status: approvedStatus });
+    // Call appropriate API based on role
+    if (role === USER_ROLES.SECRETARY) {
+      response = await torService.reviewBySecretary(tor.value.tor_id, 'approved', newComment.value);
+    } else if (role === USER_ROLES.ADMIN) {
+      response = await torService.verifyByAdmin(tor.value.tor_id, 'approved', newComment.value);
+    } else if (role === USER_ROLES.HEAD) {
+      response = await torService.approveByHead(tor.value.tor_id, 'approved', newComment.value);
+    } else {
+      errorMessage.value = 'Anda tidak memiliki izin untuk menyetujui pengajuan ini';
+      isSubmitting.value = false;
+      return;
+    }
 
-    console.log('TOR Approved:', {
-      tor_id: tor.value.tor_id,
-      status: approvedStatus,
-      message: newComment.value
-    });
-
-    // Update local state
-    tor.value.status = approvedStatus;
-    newComment.value = '';
-
-    alert(`Submitted approved as "${formatStatus(approvedStatus)}"`);
+    if (response.success) {
+      // Show success message
+      successMessage.value = response.message || 'Pengajuan berhasil disetujui';
+      newComment.value = '';
+      // Re-fetch TOR data to show updated status and comments
+      await fetchTOR();
+      // Navigate back to home after a brief delay
+      setTimeout(() => {
+        router.push('/app/home');
+      }, 1500);
+    } else {
+      errorMessage.value = response.message || 'Gagal menyetujui pengajuan';
+    }
   } catch (error) {
     console.error('Error approving:', error);
-    alert('Failed to approve submission');
+    errorMessage.value = 'Terjadi kesalahan saat menyetujui pengajuan';
   } finally {
     isSubmitting.value = false;
   }
@@ -471,41 +541,46 @@ const approveSubmission = async () => {
 const rejectSubmission = async () => {
   if (!tor.value) return;
   if (!newComment.value.trim()) {
-    alert('Please add a comment before declining');
+    errorMessage.value = 'Mohon tambahkan komentar sebelum menolak';
     return;
   }
 
   isSubmitting.value = true;
+  errorMessage.value = '';
+  successMessage.value = '';
   try {
-    const revisionStatus = getRejectionStatus();
-    const roleDisplay = getRoleDisplayName();
-    const displayStatus = `Needs Revision by ${roleDisplay}`;
-    
-    // Add rejection comment
-    comments.value.push({
-      reviewer_name: roleDisplay,
-      created_at: new Date().toISOString(),
-      status: displayStatus,
-      message: `Revision needed: ${newComment.value}`
-    });
+    const role = authStore.role;
+    let response;
 
-    // TODO: Send to backend API
-    // await torService.updateTor(tor.value.tor_id, { status: revisionStatus });
+    // Call appropriate API based on role
+    if (role === USER_ROLES.SECRETARY) {
+      response = await torService.reviewBySecretary(tor.value.tor_id, 'request_revision', newComment.value);
+    } else if (role === USER_ROLES.ADMIN) {
+      response = await torService.verifyByAdmin(tor.value.tor_id, 'request_revision', newComment.value);
+    } else if (role === USER_ROLES.HEAD) {
+      response = await torService.approveByHead(tor.value.tor_id, 'request_revision', newComment.value);
+    } else {
+      errorMessage.value = 'Anda tidak memiliki izin untuk menolak pengajuan ini';
+      isSubmitting.value = false;
+      return;
+    }
 
-    console.log('TOR Rejected:', {
-      tor_id: tor.value.tor_id,
-      status: revisionStatus,
-      message: newComment.value
-    });
-
-    // Update local state
-    tor.value.status = revisionStatus;
-    newComment.value = '';
-
-    alert(`Submission marked as "${displayStatus}"`);
+    if (response.success) {
+      // Show success message
+      successMessage.value = response.message || 'Permintaan revisi berhasil dikirim';
+      newComment.value = '';
+      // Re-fetch TOR data to show updated status and comments
+      await fetchTOR();
+      // Navigate back to home after a brief delay
+      setTimeout(() => {
+        router.push('/app/home');
+      }, 1500);
+    } else {
+      errorMessage.value = response.message || 'Gagal meminta revisi';
+    }
   } catch (error) {
     console.error('Error rejecting:', error);
-    alert('Failed to reject submission');
+    errorMessage.value = 'Terjadi kesalahan saat meminta revisi';
   } finally {
     isSubmitting.value = false;
   }
@@ -513,6 +588,33 @@ const rejectSubmission = async () => {
 
 const goBack = () => {
   router.back();
+};
+
+const editTOR = () => {
+  if (!tor.value) return;
+  router.push(`/app/tor/${tor.value.tor_id}`);
+};
+
+const createLPJ = () => {
+  if (!tor.value) return;
+  router.push({ name: 'LPJ', query: { torId: tor.value.tor_id } });
+};
+
+const fetchComments = () => {
+  if (!tor.value || !tor.value.approvals) {
+    comments.value = [];
+    return;
+  }
+  
+  // Extract approval records and map them to comments
+  comments.value = tor.value.approvals.map((approval: any) => ({
+    reviewer_name: approval.user?.full_name || approval.role?.role_name || 'Unknown Reviewer',
+    created_at: approval.created_at,
+    status: approval.status,
+    message: approval.catatan || ''
+  }));
+  
+  console.log('ReviewTOR: Comments loaded:', comments.value);
 };
 
 const fetchTOR = async () => {
@@ -527,7 +629,11 @@ const fetchTOR = async () => {
     if (response.success && response.data) {
       tor.value = response.data;
       console.log('ReviewTOR: TOR loaded successfully:', tor.value);
-      // TODO: Fetch comments from API
+      if (tor.value) {
+        console.log('ReviewTOR: Attachments:', tor.value.attachments);
+      }
+      // Fetch comments from the approval records
+      fetchComments();
     } else {
       errorMessage.value = response.message || 'Failed to load TOR details';
       console.error('ReviewTOR: Failed to load -', errorMessage.value);

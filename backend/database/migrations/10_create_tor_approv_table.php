@@ -14,9 +14,9 @@ return new class extends Migration
             $table->unsignedBigInteger('tor_id')->nullable();
             $table->string('user_id', 10)->nullable();
             $table->unsignedBigInteger('role_id')->nullable();
-            $table->string('status', 20);
+            $table->string('status', 50);
             $table->text('catatan')->nullable();
-            $table->string('action', 20);
+            $table->string('action', 50);
             $table->timestamp('created_at')->useCurrent();
 
             $table->foreign('tor_id')->references('tor_id')->on('tor')->onDelete('cascade');

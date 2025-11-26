@@ -100,12 +100,12 @@ class LpjController extends Controller
                 'user_id' => Auth::guard('api')->id(),
                 'activity_result' => $request->activity_result,
                 'activity_evaluation' => $request->activity_evaluation,
-                'budget_used' => $request->budget_used,
-                'status' => 'under_review',
-                'current_stage' => 'under_review',
-            ]);
+            'budget_used' => $request->budget_used,
+            'status' => 'submitted',
+            'current_stage' => 'submitted',
+        ]);
 
-            $lpj->addStatusHistory('under_review', 'LPJ submitted for review', Auth::guard('api')->id());
+        $lpj->addStatusHistory('submitted', 'LPJ submitted', Auth::guard('api')->id());
 
             return response()->json([
                 'success' => true,
@@ -172,16 +172,62 @@ class LpjController extends Controller
                 ], 403);
             }
 
-            // Only allow update if status is draft or needs_revision
-            if (!in_array($lpj->status, ['draft', 'needs_revision'])) {
+            // Only allow update if status is submitted or needs_revision
+        if (!in_array($lpj->status, ['submitted', 'needs_revision', 'needs_revision_by_secretary', 'needs_revision_by_admin', 'needs_revision_by_head'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot update LPJ in current status'
                 ], 400);
             }
 
+            $oldStatus = $lpj->status;
             $lpj->update($request->all());
             $lpj->addStatusHistory('updated', 'LPJ updated', Auth::guard('api')->id());
+
+            // If LPJ was in revision, automatically resubmit
+            if (str_contains($oldStatus, 'needs_revision')) {
+                $newStatus = $lpj->resubmit(Auth::guard('api')->id());
+
+                // Notify LPJ creator
+                $lpj->user->notify(new LpjStatusChanged(
+                    $lpj,
+                    $oldStatus,
+                    $newStatus,
+                    Auth::guard('api')->user()->full_name,
+                    'LPJ has been resubmitted after revision'
+                ));
+
+                // Notify appropriate reviewers
+                $reviewers = null;
+                $notificationMessage = '';
+
+                if ($newStatus === 'under_review') {
+                    $reviewers = User::whereHas('role', function ($q) {
+                        $q->where('role_def', 'sekretaris jurusan');
+                    })->get();
+                    $notificationMessage = 'LPJ resubmitted after revision';
+                } elseif ($newStatus === 'reviewed_by_secretary') {
+                    $reviewers = User::whereHas('role', function ($q) {
+                        $q->where('role_def', 'admin jurusan');
+                    })->get();
+                    $notificationMessage = 'LPJ resubmitted after revision - needs admin verification';
+                } elseif ($newStatus === 'verified_by_admin') {
+                    $reviewers = User::whereHas('role', function ($q) {
+                        $q->where('role_def', 'ketua jurusan');
+                    })->get();
+                    $notificationMessage = 'LPJ resubmitted after revision - needs final approval';
+                }
+
+                if ($reviewers && $reviewers->count() > 0) {
+                    Notification::send($reviewers, new LpjStatusChanged(
+                        $lpj,
+                        $oldStatus,
+                        $newStatus,
+                        Auth::guard('api')->user()->full_name,
+                        $notificationMessage
+                    ));
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -213,11 +259,11 @@ class LpjController extends Controller
                 ], 403);
             }
 
-            // Only allow delete if status is draft
-            if ($lpj->status !== 'draft') {
+            // Only allow delete if status is submitted or needs_revision
+            if (!in_array($lpj->status, ['submitted', 'needs_revision', 'needs_revision_by_secretary', 'needs_revision_by_admin', 'needs_revision_by_head'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cannot delete LPJ that has been submitted'
+                    'message' => 'Cannot delete LPJ that is under review or approved'
                 ], 400);
             }
 
@@ -252,15 +298,33 @@ class LpjController extends Controller
                 ], 403);
             }
 
-            // Only allow submit if status is draft or needs_revision
-            if (!in_array($lpj->status, ['draft', 'needs_revision'])) {
+            // Only allow submit if status is submitted or needs_revision (any variant)
+            if (!in_array($lpj->status, [
+                'submitted',
+                'needs_revision',
+                'needs_revision_by_secretary',
+                'needs_revision_by_admin',
+                'needs_revision_by_head'
+            ])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot submit LPJ in current status'
                 ], 400);
             }
 
-            $lpj->submit(Auth::guard('api')->id());
+            // Determine if this is a resubmission
+            $oldStatus = $lpj->status;
+            $isResubmission = str_contains($oldStatus, 'needs_revision');
+
+            if ($isResubmission) {
+                // Resubmit to the appropriate reviewer
+                $newStatus = $lpj->resubmit(Auth::guard('api')->id());
+            } else {
+                // New submission
+                $lpj->update(['status' => 'under_review']);
+                $lpj->submit(Auth::guard('api')->id());
+                $newStatus = 'under_review';
+            }
 
             return response()->json([
                 'success' => true,
@@ -327,10 +391,10 @@ class LpjController extends Controller
                 ], 403);
             }
 
-            if ($lpj->status !== 'submitted') {
+            if ($lpj->status !== 'under_review') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'LPJ is not in submitted stage'
+                    'message' => 'LPJ is not in under_review stage'
                 ], 400);
             }
 
@@ -360,8 +424,8 @@ class LpjController extends Controller
                 $newStatus = 'rejected';
                 $message = 'LPJ rejected by secretary';
             } else {
-                $lpj->requestRevision($user->user_id, $user->role_id, $catatan);
-                $newStatus = 'needs_revision';
+                $lpj->requestRevision($user->user_id, $user->role_id, $catatan, $oldStatus);
+                $newStatus = $lpj->status; // Get the role-specific revision status
                 $message = 'Revision requested by secretary';
             }
 
@@ -450,8 +514,8 @@ class LpjController extends Controller
                 $newStatus = 'rejected';
                 $message = 'LPJ rejected by admin';
             } else {
-                $lpj->requestRevision($user->user_id, $user->role_id, $catatan);
-                $newStatus = 'needs_revision';
+                $lpj->requestRevision($user->user_id, $user->role_id, $catatan, $oldStatus);
+                $newStatus = $lpj->status; // Get the role-specific revision status
                 $message = 'Revision requested by admin';
             }
 
@@ -526,8 +590,8 @@ class LpjController extends Controller
                 $newStatus = 'rejected';
                 $message = 'LPJ rejected by department head';
             } else {
-                $lpj->requestRevision($user->user_id, $user->role_id, $catatan);
-                $newStatus = 'needs_revision';
+                $lpj->requestRevision($user->user_id, $user->role_id, $catatan, $oldStatus);
+                $newStatus = $lpj->status; // Get the role-specific revision status
                 $message = 'Revision requested by department head';
             }
 
@@ -687,11 +751,12 @@ class LpjController extends Controller
                 'activity_result' => $request->activity_result,
                 'activity_evaluation' => $request->activity_evaluation,
                 'budget_used' => $request->budget_used,
-                'status' => 'draft',
-                'current_stage' => 'draft',
+                'budget_used' => $request->budget_used,
+                'status' => 'submitted',
+                'current_stage' => 'submitted',
             ]);
 
-            $lpj->addStatusHistory('draft', 'LPJ created as draft', Auth::guard('api')->id());
+            $lpj->addStatusHistory('submitted', 'LPJ submitted', Auth::guard('api')->id());
 
             // Calculate budget comparison
             $budgetComparison = [

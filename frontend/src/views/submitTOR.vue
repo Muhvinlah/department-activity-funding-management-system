@@ -73,16 +73,18 @@
         <!-- Participant -->
         <div>
           <label for="participant" class="block text-sm font-medium text-[#F6F5F4] mb-1">
-            Peserta <span class="text-red-500">*</span>
+            Jumlah Peserta <span class="text-red-500">*</span>
           </label>
-          <textarea
+          <input
             id="participant"
-            v-model="form.participant"
+            v-model.number="form.participant"
             @blur="validateField('participant')"
-            class="w-full px-4 py-2 bg-[#F6F5F4] border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 h-20"
+            type="number"
+            min="1"
+            class="w-full px-4 py-2 bg-[#F6F5F4] border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50"
             :class="errors.participant ? 'border-[#D80300]' : 'border-[#F6F5F4]'"
-            placeholder="Siapa saja peserta kegiatan ini?"
-          ></textarea>
+            placeholder="Masukkan jumlah peserta"
+          />
           <p v-if="errors.participant" class="mt-1 text-xs text-[#D80300]">
             {{ errors.participant[0] }}
           </p>
@@ -291,6 +293,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
 import torService from '@/services/torService';
 import type { TorData } from '@/services/torService';
 
@@ -298,6 +301,8 @@ const router = useRouter();
 const route = useRoute();
 const isEditing = computed(() => !!route.params.id);
 const torId = ref<number | null>(null);
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const form = ref<TorData>({
   activity_name: '',
@@ -334,8 +339,8 @@ const validateField = (field: keyof TorData) => {
   if (field === 'activity_name' && !value) {
     errors.value[field] = ['Nama kegiatan harus diisi'];
   }
-  if (field === 'pic' && !value) {
-    errors.value[field] = ['PIC harus dipilih'];
+  if (field === 'participant' && (value as number) < 1) {
+    errors.value[field] = ['Jumlah peserta harus minimal 1'];
   }
   if (field === 'budget_submitted' && (value as number) < 0) {
     errors.value[field] = ['Anggaran harus lebih besar dari 0'];
@@ -390,8 +395,31 @@ const handleSubmit = async () => {
 
       response = await torService.updateTor(torId.value, formData);
     } else {
-      // Create TOR
+      // Step 1: Create TOR with JSON data (no files)
       response = await torService.createTor(form.value);
+      
+      // Step 2: Upload files if TOR creation was successful
+      if (response.success && response.data) {
+        const createdTorId = response.data.tor_id;
+        
+        // Upload RAB file if exists
+        if (attachments.value.rab) {
+          const rabUpload = await torService.uploadAttachment(createdTorId, attachments.value.rab, 'rab');
+          if (!rabUpload.success) {
+            console.error('Failed to upload RAB file:', rabUpload.message);
+            // Continue even if file upload fails
+          }
+        }
+        
+        // Upload supporting file if exists
+        if (attachments.value.supporting) {
+          const supportingUpload = await torService.uploadAttachment(createdTorId, attachments.value.supporting, 'supporting');
+          if (!supportingUpload.success) {
+            console.error('Failed to upload supporting file:', supportingUpload.message);
+            // Continue even if file upload fails
+          }
+        }
+      }
     }
 
     if (response.success) {
@@ -415,15 +443,36 @@ const handleSubmit = async () => {
 };
 
 onMounted(async () => {
-  // Fetch categories and budgets
-  // This assumes you have these endpoints available
-  // Update with your actual API calls
-  categories.value = [
-    { category_id: 1, category_name: 'Akademik' },
-    { category_id: 2, category_name: 'Kemahasiswaan' },
-    { category_id: 3, category_name: 'Penelitian' },
-    { category_id: 4, category_name: 'Pengabdian Masyarakat' }
-  ];
+  // Fetch categories from database
+  try {
+    const authStore = useAuthStore();
+    const response = await fetch(`${API_URL}/activity-categories`, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Categories fetched:', result); // Debug log
+      if (result.success && result.data) {
+        categories.value = result.data.map((cat: any) => ({
+          category_id: cat.category_id,
+          category_name: cat.category_def
+        }));
+        console.log('Categories mapped:', categories.value); // Debug log
+      }
+    } else {
+      console.error('Failed to fetch categories, status:', response.status);
+    }
+  } catch (error) {
+    console.error('Failed to fetch categories:', error);
+    // Fallback to empty array
+    categories.value = [];
+  }
+
+  // Fetch budgets
   budgets.value = [
     { budget_id: 1, year: '2025' },
     { budget_id: 2, year: '2026' },

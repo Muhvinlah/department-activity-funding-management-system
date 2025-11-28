@@ -378,6 +378,49 @@ class TorService {
       };
     }
   }
+
+  async uploadAttachment(torId: number, file: File, fileType: string): Promise<TorResponse> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('tor_id', String(torId));
+      formData.append('file_type', fileType);
+
+      const authStore = useAuthStore();
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      };
+      // Do NOT set Content-Type for FormData
+
+      const response = await fetch(`${API_URL}/attachments/upload`, {
+        method: 'POST',
+        headers: headers,
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to upload attachment',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'Attachment uploaded successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
 }
 
 export default new TorService();

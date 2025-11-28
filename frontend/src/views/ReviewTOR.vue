@@ -149,13 +149,17 @@
               </div>
 
               <!-- PDF Viewer -->
-              <div v-if="isPDF(file.file_name)" class="mt-4 bg-gray-100 rounded h-96">
+              <!-- <div v-if="isPDF(file.file_name)" class="mt-4 bg-gray-100 rounded h-96">
                 <iframe
-                  :src="file.file_path"
+                  v-if="pdfUrls[file.attach_id]"
+                  :src="pdfUrls[file.attach_id]"
                   class="w-full h-full rounded"
                   type="application/pdf"
                 ></iframe>
-              </div>
+                <div v-else class="flex items-center justify-center h-full text-gray-500">
+                  Loading PDF...
+                </div>
+              </div> -->
             </div>
           </div>
           <div v-else class="text-gray-500 text-center py-8">
@@ -286,6 +290,7 @@ interface TOR {
   pic: string;
   status: string;
   attachments: Array<{
+    attach_id: number;
     file_name: string;
     file_path: string;
     file_size: number;
@@ -314,9 +319,12 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
 const tor = ref<TOR | null>(null);
 const isLoading = ref(false);
 const successMessage = ref('');
+const pdfUrls = ref<Record<number, string>>({});
 const errorMessage = ref('');
 const comments = ref<Comment[]>([]);
 const newComment = ref('');
@@ -460,14 +468,55 @@ const formatStatus = (status?: string) => {
   return statusMap[status] || status;
 };
 
-const downloadFile = (file: any) => {
-  const link = document.createElement('a');
-  link.href = file.file_path;
-  link.download = file.file_name;
-  link.target = '_blank';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+const loadPdf = async (file: any) => {
+  if (pdfUrls.value[file.attach_id]) return;
+
+  try {
+    const authStore = useAuthStore();
+    const response = await fetch(`${API_URL}/attachments/download/${file.attach_id}`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    });
+
+    if (response.ok) {
+      const blob = await response.blob();
+      pdfUrls.value[file.attach_id] = window.URL.createObjectURL(blob);
+    }
+  } catch (error) {
+    console.error('Error loading PDF:', error);
+  }
+};
+
+const downloadFile = async (file: any) => {
+  try {
+    const authStore = useAuthStore();
+    const response = await fetch(`${API_URL}/attachments/download/${file.attach_id}`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Failed to download file');
+      return;
+    }
+
+    // Get the blob from response
+    const blob = await response.blob();
+    
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.file_name || 'download';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error downloading file:', error);
+  }
 };
 
 const submitComment = async () => {
@@ -631,6 +680,15 @@ const fetchTOR = async () => {
       console.log('ReviewTOR: TOR loaded successfully:', tor.value);
       if (tor.value) {
         console.log('ReviewTOR: Attachments:', tor.value.attachments);
+        
+        // Load PDFs
+        if (tor.value.attachments) {
+          tor.value.attachments.forEach(file => {
+            if (isPDF(file.file_name)) {
+              loadPdf(file);
+            }
+          });
+        }
       }
       // Fetch comments from the approval records
       fetchComments();

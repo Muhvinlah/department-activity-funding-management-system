@@ -61,7 +61,7 @@ class TorController extends Controller
             'activity_name' => 'required|string|max:255',
             'activity_background' => 'required|string',
             'activity_purpose' => 'required|string',
-            'participant' => 'required|string',
+            'participant' => 'required|numeric|min:1',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
             'budget_submitted' => 'required|numeric|min:0',

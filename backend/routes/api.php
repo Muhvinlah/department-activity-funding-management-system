@@ -43,11 +43,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('lpj/{id}/approve-head', [LpjController::class, 'approveByHead']);
     Route::get('lpj/{id}/compare-budget', [LpjController::class, 'compareBudget']);
 
-    // Attachment routes
-    Route::post('attachments/upload', [AttachmentController::class, 'upload']);
-    Route::get('attachments/{id}/download', [AttachmentController::class, 'download']);
-    Route::delete('attachments/{id}', [AttachmentController::class, 'destroy']);
-
     // Annual Budget routes (admin only)
     Route::get('annual-budgets', [AnnualBudgetController::class, 'index']);
     Route::get('annual-budgets/{id}', [AnnualBudgetController::class, 'show']);
@@ -69,5 +64,10 @@ Route::middleware('auth:api')->group(function () {
     // LPJ Pre-fill routes
     Route::get('lpj/prefill/{torId}', [LpjController::class, 'getPreFillData']);
     Route::post('lpj/create-with-prefill', [LpjController::class, 'createWithPreFill']);
+
+    // Attachment routes
+    Route::post('attachments/upload', [AttachmentController::class, 'upload']);
+    Route::get('attachments/download/{id}', [AttachmentController::class, 'download']);
+    Route::delete('attachments/{id}', [AttachmentController::class, 'destroy']);
 });
 

@@ -20,9 +20,10 @@ class AttachmentController extends Controller
     public function upload(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'file' => 'required|file|max:10240', // Max 10MB
+            'file' => 'required|file|max:25600', // Max 25MB
             'tor_id' => 'required_without:lpj_id|exists:tor,tor_id',
             'lpj_id' => 'required_without:tor_id|exists:lpj,lpj_id',
+            'file_type' => 'nullable|string|in:rab,supporting,other',
         ]);
 
         if ($validator->fails()) {
@@ -59,6 +60,8 @@ class AttachmentController extends Controller
 
             $attachment = Attachment::create([
                 'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $request->file_type ?? 'other',
                 'tor_id' => $request->tor_id ?? null,
                 'lpj_id' => $request->lpj_id ?? null,
             ]);

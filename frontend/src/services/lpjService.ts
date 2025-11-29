@@ -19,7 +19,7 @@ export interface LpjResponse {
   errors?: Record<string, string[]>;
 }
 
-class LpjService {
+class lpjService {
   private getAuthHeader() {
     const authStore = useAuthStore();
     return {
@@ -396,4 +396,4 @@ class LpjService {
   }
 }
 
-export default new LpjService();
+export default new lpjService();

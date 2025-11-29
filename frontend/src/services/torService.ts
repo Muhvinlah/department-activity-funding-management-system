@@ -24,7 +24,7 @@ export interface TorResponse {
   errors?: Record<string, string[]>;
 }
 
-class TorService {
+class torService {
   private getAuthHeader() {
     const authStore = useAuthStore();
     return {
@@ -423,4 +423,4 @@ class TorService {
   }
 }
 
-export default new TorService();
+export default new torService();

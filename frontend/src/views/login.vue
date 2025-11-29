@@ -27,7 +27,7 @@
           <input
             type="text"
             id="user_id"
-            v-model="user_id"
+            v-model="userId"
             placeholder="Masukkan NIM Anda (10 digit, contoh: 2207412014)"
             required
             class="w-full px-4 py-2 border border-[#0d7d90] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008797] focus:border-transparent transition duration-200"
@@ -94,14 +94,14 @@
   const authStore = useAuthStore();
 
   // Using camelCase naming convention
-  const user_id = ref('');
+  const userId = ref('');
   const password = ref('');
   const isPasswordVisible = ref(false);
   const isLoading = ref(false);
   const errorMessage = ref('');
 
   async function handleStandardLogin() {
-    if (!user_id.value || !password.value) {
+    if (!userId.value || !password.value) {
       errorMessage.value = 'NIM dan password harus diisi';
       return;
     }
@@ -112,7 +112,7 @@
     try {
       // Call auth store login with user_id (NIM) and password
       await authStore.login({
-        user_id: user_id.value,
+        user_id: userId.value,
         password: password.value,
       });
 
@@ -133,7 +133,6 @@
   }
 
   function handleSsoLogin() {
-    // SSO is disabled for now
     console.log('SSO login clicked - feature disabled pending approval');
   }
 </script>

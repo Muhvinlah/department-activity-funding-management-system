@@ -9,7 +9,7 @@ import mainLayout from '@/layouts/mainLayout.vue';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
-    component: () => import('../views/Login.vue'),
+    component: () => import('../views/login.vue'),
     meta: { requiresAuth: false, guestOnly: true }
   },
   {
@@ -26,7 +26,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'home',
         name: 'Home',
-        component: () => import('../views/Home.vue'),
+        component: () => import('../views/home.vue'),
         meta: { requiresAuth: true }
       },
       {
@@ -44,19 +44,19 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'dashboard',
         name: 'Dashboard',
-        component: () => import('../views/Dashboard.vue'),
+        component: () => import('../views/dashboard.vue'),
         meta: { requiresAuth: true }
       },
       {
         path: 'approval/tor/:id',
         name: 'ReviewTOR',
-        component: () => import('../views/ReviewTOR.vue'),
+        component: () => import('../views/reviewTOR.vue'),
         meta: { requiresAuth: true }
       },
       {
         path: 'approval/lpj/:id',
         name: 'ReviewLPJ',
-        component: () => import('../views/ReviewLPJ.vue'),
+        component: () => import('../views/reviewLPJ.vue'),
         meta: { requiresAuth: true }
       }
     ]
@@ -68,7 +68,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/:catchAll(.*)',
     name: 'NotFound',
-    component: () => import('../views/NotFound.vue'),
+    component: () => import('../views/notFound.vue'),
   }
 ];
 

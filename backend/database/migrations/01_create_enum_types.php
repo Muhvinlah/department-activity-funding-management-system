@@ -15,7 +15,9 @@ return new class extends Migration
                 'verified_by_admin',
                 'approved_by_head',
                 'rejected',
-                'needs_revision'
+                'needs_revision_by_secretary',
+                'needs_revision_by_admin',
+                'needs_revision_by_head'
             )
         ");
 

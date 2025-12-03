@@ -12,8 +12,8 @@
       >
         <div class="flex justify-between items-center">
           <span class="font-bold text-xl">{{ submission.activityName }}</span>
-          <span :class="getStatusBadgeClass(submission.status)" class="p-2 rounded-xl text-sm font-medium">
-            {{ formatStudentStatus(submission.status) }}
+          <span :class="getStatusClasses(submission.status)" class="p-2 rounded-xl text-sm font-medium">
+            {{ formatStatus(submission.status) }}
           </span>
         </div>
         <div class="flex text-md space-x-8 pt-2">
@@ -410,9 +410,9 @@ const isRelevantForCurrentRole = (submission: Submission) => {
   const role = userRole.value;
   const status = submission.status;
   
-  // Secretary (Sekretaris Jurusan) - See NEW submissions (submitted, under_review)
+  // Secretary (Sekretaris Jurusan) - See NEW submissions (submitted)
   if (role === USER_ROLES.SECRETARY) {
-    return ['submitted', 'under_review'].includes(status);
+    return ['submitted'].includes(status);
   }
   
   // Admin (Admin Jurusan) - See submissions AFTER secretary completed review
@@ -458,28 +458,10 @@ const formatSchedule = (schedule: string) => {
 
 const formatStatus = (status: string) => {
   const statusMap: Record<string, string> = {
-    'submitted': 'Diajukan',
-    'under_review': 'Sedang Ditinjau Sekretaris',
-    'reviewed_by_secretary': 'Ditinjau Sekretaris',
-    'verified_by_admin': 'Diverifikasi Admin',
+    'submitted': 'Ditinjau Sekretaris',
+    'reviewed_by_secretary': 'Diverifikasi Admin',
+    'verified_by_admin': 'Ditinjau Ketua Jurusan',
     'approved_by_head': 'Disetujui Ketua Jurusan',
-    'needs_revision': 'Perlu Revisi',
-    'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
-    'needs_revision_by_admin': 'Perlu Revisi (Admin)',
-    'needs_revision_by_head': 'Perlu Revisi (Ketua Jurusan)',
-    'rejected': 'Ditolak'
-  };
-  return statusMap[status] || status;
-};
-
-const formatStudentStatus = (status: string) => {
-  const statusMap: Record<string, string> = {
-    'submitted': 'Diajukan',
-    'under_review': 'Sedang Ditinjau Sekretaris',
-    'reviewed_by_secretary': 'Ditinjau Sekretaris',
-    'verified_by_admin': 'Diverifikasi Admin',
-    'approved_by_head': 'Disetujui Ketua Jurusan',
-    'needs_revision': 'Perlu Revisi',
     'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
     'needs_revision_by_admin': 'Perlu Revisi (Admin)',
     'needs_revision_by_head': 'Perlu Revisi (Ketua Jurusan)',
@@ -490,31 +472,13 @@ const formatStudentStatus = (status: string) => {
 
 const getStatusClasses = (status: string) => {
   const statusClasses: Record<string, string> = {
-    'submitted': 'bg-yellow-100 text-yellow-800',
-    'under_review': 'bg-blue-100 text-blue-800',
-    'reviewed_by_secretary': 'bg-purple-100 text-purple-800',
-    'verified_by_admin': 'bg-indigo-100 text-indigo-800',
-    'approved_by_head': 'bg-green-100 text-green-800',
-    'needs_revision': 'bg-orange-100 text-orange-800',
-    'needs_revision_by_secretary': 'bg-orange-100 text-orange-800',
-    'needs_revision_by_admin': 'bg-orange-100 text-orange-800',
-    'needs_revision_by_head': 'bg-orange-100 text-orange-800',
-    'rejected': 'bg-red-100 text-red-800'
-  };
-  return statusClasses[status] || 'bg-gray-100 text-gray-800';
-};
-
-const getStatusBadgeClass = (status: string) => {
-  const statusClasses: Record<string, string> = {
     'submitted': 'bg-[#FACC15]/25 text-[#FACC15]',
-    'under_review': 'bg-[#FACC15]/25 text-[#FACC15]',
     'reviewed_by_secretary': 'bg-[#FACC15]/25 text-[#FACC15]',
     'verified_by_admin': 'bg-[#FACC15]/25 text-[#FACC15]',
     'approved_by_head': 'bg-[#0BC86F]/25 text-[#0BC86F]',
-    'needs_revision': 'bg-orange-100 text-orange-800',
-    'needs_revision_by_secretary': 'bg-orange-100 text-orange-800',
-    'needs_revision_by_admin': 'bg-orange-100 text-orange-800',
-    'needs_revision_by_head': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_secretary': 'bg-[#FF8C00]/25 text-[#FF8C00]',
+    'needs_revision_by_admin': 'bg-[#FF8C00]/25 text-[#FF8C00]',
+    'needs_revision_by_head': 'bg-[#FF8C00]/25 text-[#FF8C00]',
     'rejected': 'bg-[#D80300]/25 text-[#D80300]'
   };
   return statusClasses[status] || 'bg-gray-100 text-gray-800';

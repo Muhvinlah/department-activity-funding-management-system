@@ -125,7 +125,6 @@
               <div class="flex justify-between items-start mb-2">
                 <div>
                   <p class="font-medium text-gray-800">{{ file.file_name }}</p>
-                  <p class="text-sm text-gray-500">{{ formatFileSize(file.file_size) }}</p>
                 </div>
                 <button
                   @click="downloadFile(file)"
@@ -271,7 +270,6 @@ interface LPJ {
     attach_id: number;
     file_name: string;
     file_path: string;
-    file_size: number;
   }>;
   approvals?: Array<{
     user?: {
@@ -410,14 +408,6 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-};
-
 const isPDF = (fileName: string) => {
   return fileName.toLowerCase().endsWith('.pdf');
 };
@@ -441,12 +431,10 @@ const formatStatus = (status?: string) => {
   if (!status) return 'Unknown';
   
   const statusMap: Record<string, string> = {
-    'submitted': 'Diajukan',
-    'under_review': 'Sedang Ditinjau Sekretaris',
-    'reviewed_by_secretary': 'Ditinjau Sekretaris',
-    'verified_by_admin': 'Diverifikasi Admin',
+    'submitted': 'Ditinjau Sekretaris',
+    'reviewed_by_secretary': 'Diverifikasi Admin',
+    'verified_by_admin': 'Ditinjau Ketua Jurusan',
     'approved_by_head': 'Disetujui Ketua Jurusan',
-    'needs_revision': 'Perlu Revisi',
     'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
     'needs_revision_by_admin': 'Perlu Revisi (Admin)',
     'needs_revision_by_head': 'Perlu Revisi (Ketua Jurusan)',

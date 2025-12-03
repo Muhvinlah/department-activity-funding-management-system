@@ -67,11 +67,6 @@ class torService {
 
   async updateTor(id: number, data: FormData): Promise<TorResponse> {
     try {
-      // For file uploads with PUT/PATCH in Laravel, we often need to use POST with _method field
-      // or just handle it as POST if the backend route supports it.
-      // Assuming standard Laravel resource controller which expects PUT/PATCH for updates.
-      // However, PHP has issues reading files from PUT requests.
-      // Best practice for Laravel API file updates: POST with _method: 'PUT'
       
       data.append('_method', 'PUT');
 

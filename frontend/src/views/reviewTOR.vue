@@ -84,8 +84,8 @@
                 Tanggal Mulai
               </label>
               <input
-                type="date"
-                :value="tor.start_date"
+                type="text"
+                :value="formatDateDisplay(tor.start_date)"
                 disabled
                 class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 cursor-not-allowed"
               />
@@ -95,8 +95,8 @@
                 Tanggal Berakhir
               </label>
               <input
-                type="date"
-                :value="tor.end_date"
+                type="text"
+                :value="formatDateDisplay(tor.end_date)"
                 disabled
                 class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 cursor-not-allowed"
               />
@@ -138,7 +138,6 @@
               <div class="flex justify-between items-start mb-2">
                 <div>
                   <p class="font-medium text-gray-800">{{ file.file_name }}</p>
-                  <p class="text-sm text-gray-500">{{ formatFileSize(file.file_size) }}</p>
                 </div>
                 <button
                   @click="downloadFile(file)"
@@ -147,19 +146,6 @@
                   Download
                 </button>
               </div>
-
-              <!-- PDF Viewer -->
-              <!-- <div v-if="isPDF(file.file_name)" class="mt-4 bg-gray-100 rounded h-96">
-                <iframe
-                  v-if="pdfUrls[file.attach_id]"
-                  :src="pdfUrls[file.attach_id]"
-                  class="w-full h-full rounded"
-                  type="application/pdf"
-                ></iframe>
-                <div v-else class="flex items-center justify-center h-full text-gray-500">
-                  Loading PDF...
-                </div>
-              </div> -->
             </div>
           </div>
           <div v-else class="text-gray-500 text-center py-8">
@@ -293,7 +279,6 @@ interface TOR {
     attach_id: number;
     file_name: string;
     file_path: string;
-    file_size: number;
   }>;
   approvals?: Array<{
     user?: {
@@ -339,8 +324,7 @@ const isReviewer = computed(() => {
 // Check if submission needs revision
 const needsRevision = computed(() => {
   if (!tor.value) return false;
-  return tor.value.status === 'needs_revision' ||
-         tor.value.status === 'needs_revision_by_secretary' ||
+  return tor.value.status === 'needs_revision_by_secretary' ||
          tor.value.status === 'needs_revision_by_admin' ||
          tor.value.status === 'needs_revision_by_head';
 });
@@ -371,36 +355,7 @@ const getApprovedStatus = () => {
     case USER_ROLES.HEAD:
       return 'approved_by_head';
     default:
-      return 'under_review';
-  }
-};
-
-const getRejectionStatus = () => {
-  const role = authStore.role;
-  const roleName = getRoleDisplayName();
-  switch (role) {
-    case USER_ROLES.SECRETARY:
-      return `needs_revision_by_${USER_ROLES.SECRETARY.replace(/\s+/g, '_')}`;
-    case USER_ROLES.ADMIN:
-      return `needs_revision_by_${USER_ROLES.ADMIN.replace(/\s+/g, '_')}`;
-    case USER_ROLES.HEAD:
-      return `needs_revision_by_${USER_ROLES.HEAD.replace(/\s+/g, '_')}`;
-    default:
-      return 'needs_revision';
-  }
-};
-
-const getRoleDisplayName = () => {
-  const role = authStore.role;
-  switch (role) {
-    case USER_ROLES.SECRETARY:
-      return 'Sekretaris Jurusan';
-    case USER_ROLES.ADMIN:
-      return 'Admin Jurusan';
-    case USER_ROLES.HEAD:
-      return 'Ketua Jurusan';
-    default:
-      return 'Unknown';
+      return 'submitted';
   }
 };
 
@@ -415,6 +370,7 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+// comments date format
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('id-ID', {
     year: 'numeric',
@@ -423,8 +379,17 @@ const formatDate = (dateString: string) => {
   });
 };
 
+// inputted date format
+const formatDateDisplay = (dateString: string) => {
+  if (!dateString) return '';
+  const datePart = dateString.split('T')[0]; // Get only the date part before 'T'
+  if (!datePart) return '';
+  const [year, month, day] = datePart.split('-');
+  return `${day}-${month}-${year}`;
+};
+
 const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 Bytes';
+  if (!bytes || bytes === 0) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -437,11 +402,10 @@ const isPDF = (fileName: string) => {
 
 const getStatusBadgeClass = (status?: string) => {
   const statusClasses: Record<string, string> = {
-    'under_review': 'bg-blue-100 text-blue-800',
+    'submitted': 'bg-blue-100 text-blue-800',
     'reviewed_by_secretary': 'bg-purple-100 text-purple-800',
     'verified_by_admin': 'bg-indigo-100 text-indigo-800',
     'approved_by_head': 'bg-green-100 text-green-800',
-    'needs_revision': 'bg-orange-100 text-orange-800',
     'needs_revision_by_secretary': 'bg-orange-100 text-orange-800',
     'needs_revision_by_admin': 'bg-orange-100 text-orange-800',
     'needs_revision_by_head': 'bg-orange-100 text-orange-800',
@@ -454,12 +418,10 @@ const formatStatus = (status?: string) => {
   if (!status) return 'Unknown';
   
   const statusMap: Record<string, string> = {
-    'submitted': 'Diajukan',
-    'under_review': 'Sedang Ditinjau Sekretaris',
-    'reviewed_by_secretary': 'Ditinjau Sekretaris',
-    'verified_by_admin': 'Diverifikasi Admin',
+    'submitted': 'Ditinjau Sekretaris',
+    'reviewed_by_secretary': 'Diverifikasi Admin',
+    'verified_by_admin': 'Ditinjau Ketua Jurusan',
     'approved_by_head': 'Disetujui Ketua Jurusan',
-    'needs_revision': 'Perlu Revisi',
     'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
     'needs_revision_by_admin': 'Perlu Revisi (Admin)',
     'needs_revision_by_head': 'Perlu Revisi (Ketua Jurusan)',
@@ -517,26 +479,6 @@ const downloadFile = async (file: any) => {
   } catch (error) {
     console.error('Error downloading file:', error);
   }
-};
-
-const submitComment = async () => {
-  if (!newComment.value.trim()) return;
-
-  // TODO: Send comment to backend API
-  // For now, add to local comments array
-  comments.value.push({
-    reviewer_name: getRoleDisplayName(),
-    created_at: new Date().toISOString(),
-    status: commentStatus.value,
-    message: newComment.value
-  });
-
-  newComment.value = '';
-  console.log('Comment submitted:', {
-    tor_id: tor.value?.tor_id,
-    status: commentStatus.value,
-    message: newComment.value
-  });
 };
 
 const approveSubmission = async () => {

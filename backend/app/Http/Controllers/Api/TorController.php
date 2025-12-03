@@ -197,7 +197,7 @@ class TorController extends Controller
                 $reviewers = null;
                 $notificationMessage = '';
                 
-                if ($newStatus === 'under_review') {
+                if ($newStatus === 'submitted') {
                     $reviewers = User::whereHas('role', function ($q) {
                         $q->where('role_def', 'sekretaris jurusan');
                     })->get();
@@ -317,9 +317,8 @@ class TorController extends Controller
             $newStatus = $tor->resubmit(Auth::guard('api')->id());
         } else {
             // New submission
-            $tor->update(['status' => 'under_review']);
             $tor->submit(Auth::guard('api')->id());
-            $newStatus = 'under_review';
+            $newStatus = 'submitted';
         }
 
         // Notify TOR creator
@@ -335,7 +334,7 @@ class TorController extends Controller
         $reviewers = null;
         $notificationMessage = '';
         
-        if ($newStatus === 'under_review') {
+        if ($newStatus === 'submitted') {
             // Notify secretaries
             $reviewers = User::whereHas('role', function ($q) {
                 $q->where('role_def', 'sekretaris jurusan');
@@ -411,10 +410,10 @@ class TorController extends Controller
             }
 
             // Check if TOR is in correct stage
-            if ($tor->status !== 'under_review') {
+            if ($tor->status !== 'submitted') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'TOR is not in under_review stage'
+                    'message' => 'TOR is not in submitted stage'
                 ], 400);
             }
 
@@ -454,7 +453,7 @@ class TorController extends Controller
                 $tor,
                 $oldStatus,
                 $newStatus,
-                $user->name,
+                $user->full_name,
                 $catatan ?: $message
             ));
 

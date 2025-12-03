@@ -57,7 +57,7 @@ class LpjController extends Controller
             'tor_id' => 'required|exists:tor,tor_id',
             'activity_result' => 'required|string',
             'activity_evaluation' => 'required|string',
-            'actual_date => required|date',
+            'actual_date' => 'required|date',
             'budget_used' => 'required|numeric|min:1',
         ]);
 
@@ -100,10 +100,11 @@ class LpjController extends Controller
                 'user_id' => Auth::guard('api')->id(),
                 'activity_result' => $request->activity_result,
                 'activity_evaluation' => $request->activity_evaluation,
-            'budget_used' => $request->budget_used,
-            'status' => 'submitted',
-            'current_stage' => 'submitted',
-        ]);
+                'actual_date' => $request->actual_date,
+                'budget_used' => $request->budget_used,
+                'status' => 'submitted',
+                'current_stage' => 'submitted',
+            ]);
 
         $lpj->addStatusHistory('submitted', 'LPJ submitted', Auth::guard('api')->id());
 
@@ -201,7 +202,7 @@ class LpjController extends Controller
                 $reviewers = null;
                 $notificationMessage = '';
 
-                if ($newStatus === 'under_review') {
+                if ($newStatus === 'submitted') {
                     $reviewers = User::whereHas('role', function ($q) {
                         $q->where('role_def', 'sekretaris jurusan');
                     })->get();
@@ -321,9 +322,8 @@ class LpjController extends Controller
                 $newStatus = $lpj->resubmit(Auth::guard('api')->id());
             } else {
                 // New submission
-                $lpj->update(['status' => 'under_review']);
                 $lpj->submit(Auth::guard('api')->id());
-                $newStatus = 'under_review';
+                $newStatus = 'submitted';
             }
 
             return response()->json([
@@ -391,10 +391,10 @@ class LpjController extends Controller
                 ], 403);
             }
 
-            if ($lpj->status !== 'under_review') {
+            if ($lpj->status !== 'submitted') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'LPJ is not in under_review stage'
+                    'message' => 'LPJ is not in submitted stage'
                 ], 400);
             }
 

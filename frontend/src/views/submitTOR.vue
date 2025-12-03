@@ -161,7 +161,7 @@
               type="text"
               class="w-full px-4 py-2 bg-[#F6F5F4] border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50"
               :class="errors.pic ? 'border-[#D80300]' : 'border-[#F6F5F4]'"
-              placeholder="Nama mahasiswa (Penanggung Jawab)"
+              placeholder="Nama Penanggung Jawab"
             />
             <p v-if="errors.pic" class="mt-1 text-xs text-[#D80300]">
               {{ errors.pic[0] }}

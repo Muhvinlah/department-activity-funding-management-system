@@ -9,6 +9,7 @@ import mainLayout from '@/layouts/mainLayout.vue';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
+    name: 'Login',
     component: () => import('../views/login.vue'),
     meta: { requiresAuth: false, guestOnly: true }
   },
@@ -36,7 +37,7 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true }
       },
       {
-        path: 'lpj',
+        path: 'lpj/:id?',
         name: 'LPJ',
         component: () => import('../views/submitLPJ.vue'),
         meta: { requiresAuth: true }

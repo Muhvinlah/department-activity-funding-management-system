@@ -80,21 +80,16 @@ class Tor extends Model
         return $this->hasMany(TorApprov::class, 'tor_id', 'tor_id');
     }
 
-    /**
-     * Submit TOR
-     */
+    // Submit TOR
     public function submit($userId)
     {
-        $this->status = 'under_review';
-        $this->current_stage = 'under_review';
+        $this->status = 'submitted';
+        $this->current_stage = 'submitted';
         $this->save();
-
-        $this->addStatusHistory('under_review', 'TOR submitted for approval', $userId);
+        $this->addStatusHistory('submitted', 'TOR submitted for approval', $userId);
     }
 
-    /**
-     * Add status history
-     */
+    // Add status history
     public function addStatusHistory($status, $catatan = null, $userId = null)
     {
         StatusHist::create([
@@ -105,9 +100,7 @@ class Tor extends Model
         ]);
     }
 
-    /**
-     * Add approval record
-     */
+    // Add approval record
     public function addApproval($userId, $roleId, $action, $catatan = null)
     {
         TorApprov::create([
@@ -120,9 +113,7 @@ class Tor extends Model
         ]);
     }
 
-    /**
-     * Approve by secretary
-     */
+    // Approve by secretary
     public function approveBySecretary($userId, $roleId, $catatan = null)
     {
         $this->status = 'reviewed_by_secretary';
@@ -133,9 +124,7 @@ class Tor extends Model
         $this->addApproval($userId, $roleId, 'approved', $catatan);
     }
 
-    /**
-     * Verify by admin
-     */
+    // Verify by admin
     public function verifyByAdmin($userId, $roleId, $catatan = null)
     {
         $this->status = 'verified_by_admin';
@@ -146,9 +135,7 @@ class Tor extends Model
         $this->addApproval($userId, $roleId, 'approved', $catatan);
     }
 
-    /**
-     * Approve by head
-     */
+    // Approve by head
     public function approveByHead($userId, $roleId, $catatan = null)
     {
         $this->status = 'approved_by_head';
@@ -159,9 +146,7 @@ class Tor extends Model
         $this->addApproval($userId, $roleId, 'approved', $catatan);
     }
 
-    /**
-     * Reject TOR
-     */
+    // Reject TOR
     public function reject($userId, $roleId, $catatan)
     {
         $this->status = 'rejected';
@@ -172,15 +157,13 @@ class Tor extends Model
         $this->addApproval($userId, $roleId, 'rejected', $catatan);
     }
 
-    /**
-     * Request revision
-     */
+    // Request revision
     public function requestRevision($userId, $roleId, $catatan, $currentStatus = null)
     {
         // Determine which stage requested revision based on current status
         $revisionStatus = 'needs_revision'; // Default fallback
         
-        if ($currentStatus === 'under_review') {
+        if ($currentStatus === 'submitted') {
             $revisionStatus = 'needs_revision_by_secretary';
         } elseif ($currentStatus === 'reviewed_by_secretary') {
             $revisionStatus = 'needs_revision_by_admin';
@@ -196,20 +179,18 @@ class Tor extends Model
         $this->addApproval($userId, $roleId, 'request_revision', $catatan);
     }
 
-    /**
-     * Resubmit TOR after revision
-     */
+    // Resubmit TOR after revision
     public function resubmit($userId)
     {
         // Determine where to send based on current revision status
-        $newStatus = 'under_review'; // Default to secretary stage
+        $newStatus = 'submitted'; // Default to secretary stage
         
         if ($this->status === 'needs_revision_by_admin') {
             $newStatus = 'reviewed_by_secretary'; // Back to admin stage
         } elseif ($this->status === 'needs_revision_by_head') {
             $newStatus = 'verified_by_admin'; // Back to head stage
         } elseif ($this->status === 'needs_revision_by_secretary') {
-            $newStatus = 'under_review'; // Back to secretary stage
+            $newStatus = 'submitted'; // Back to secretary stage
         }
         
         $this->status = $newStatus;

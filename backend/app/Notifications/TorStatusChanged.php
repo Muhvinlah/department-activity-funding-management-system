@@ -28,20 +28,20 @@ class TorStatusChanged extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject("TOR Status Updated: {$this->tor->activity_name}")
-            ->greeting("Hello {$notifiable->full_name},")
-            ->line("The status of your TOR '{$this->tor->activity_name}' has been updated.")
-            ->line("**Previous Status:** " . ucwords(str_replace('_', ' ', $this->oldStatus)))
-            ->line("**New Status:** " . ucwords(str_replace('_', ' ', $this->newStatus)))
-            ->line("**Action By:** {$this->actionBy}");
+            ->subject("Status Dokumen TOR diperbarui: {$this->tor->activity_name}")
+            ->greeting("Halo {$notifiable->full_name},")
+            ->line("Status dokumen TOR '{$this->tor->activity_name}' telah diperbarui.")
+            ->line("**Status sebelumnya:** " . ucwords(str_replace('_', ' ', $this->oldStatus)))
+            ->line("**Status baru:** " . ucwords(str_replace('_', ' ', $this->newStatus)))
+            ->line("**Diperbarui oleh:** {$this->actionBy}");
 
         // Add description if provided
         if ($this->description) {
-            $mail->line("**Note:** {$this->description}");
+            $mail->line("**Catatan:** {$this->description}");
         }
 
-        $mail->action('View TOR', url("/api/tor/{$this->tor->tor_id}"))
-            ->line('Thank you for using our application!');
+        // $mail->action('Lihat TOR', url("/app/approval/tor/{$this->tor->tor_id}"))
+        //     ->line('Terima kasih telah menggunakan aplikasi ini!');
 
         return $mail;
     }

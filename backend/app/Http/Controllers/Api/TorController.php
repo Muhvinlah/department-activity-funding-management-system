@@ -37,7 +37,7 @@ class TorController extends Controller
                 $query->where('user_id', Auth::guard('api')->id());
             }
 
-            $tors = $query->orderBy('sub_date', 'desc')->get();
+            $tors = $query->orderBy('created_at', 'desc')->get();
 
             return response()->json([
                 'success' => true,

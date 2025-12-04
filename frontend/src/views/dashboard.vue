@@ -174,44 +174,78 @@
 
         <!-- Charts and Visualizations -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <!-- Status Distribution Chart -->
+          <!-- Monthly Submissions Chart -->
           <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Status Kegiatan</h2>
-            <div class="h-64 flex items-center justify-center">
-              <!-- Placeholder for chart - in real app, use Chart.js or similar -->
-              <div class="text-center text-gray-500">
-                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <p>Grafik distribusi status akan ditampilkan di sini</p>
-              </div>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Trend Pengajuan Bulanan</h2>
+            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+            </div>
+            <div v-else-if="chartData" class="h-64">
+              <Line :data="monthlySubmissionsChartData" :options="lineChartOptions" />
+            </div>
+            <div v-else class="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available</p>
             </div>
           </div>
 
-          <!-- Monthly Trend -->
+          <!-- Status Distribution Chart -->
           <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Trend Pengajuan Bulanan</h2>
-            <div class="h-64 flex items-center justify-center">
-              <!-- Placeholder for chart -->
-              <div class="text-center text-gray-500">
-                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                </svg>
-                <p>Grafik trend bulanan akan ditampilkan di sini</p>
-              </div>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Status Kegiatan</h2>
+            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+            </div>
+            <div v-else-if="chartData" class="h-64">
+              <Doughnut :data="statusDistributionChartData" :options="doughnutChartOptions" />
+            </div>
+            <div v-else class="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available</p>
+            </div>
+          </div>
+
+          <!-- Budget by Category Chart -->
+          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Anggaran per Kategori</h2>
+            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+            </div>
+            <div v-else-if="chartData" class="h-64">
+              <Pie :data="budgetByCategoryChartData" :options="pieChartOptions" />
+            </div>
+            <div v-else class="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available</p>
+            </div>
+          </div>
+
+          <!-- Budget vs Realization Chart -->
+          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Anggaran vs Realisasi (Top 10)</h2>
+            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+            </div>
+            <div v-else-if="chartData" class="h-64">
+              <Bar :data="budgetVsRealizationChartData" :options="barChartOptions" />
+            </div>
+            <div v-else class="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available</p>
             </div>
           </div>
         </div>
 
         <!-- Admin-only Section (Conditional) -->
-        <div v-if="user.role === 'admin' || user.role === 'department_chair'" class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+        <div v-if="userRole === 'admin jurusan' || userRole === 'ketua jurusan'" class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
           <h2 class="text-lg font-semibold text-gray-800 mb-4">Aksi Administratif</h2>
-          <div class="flex gap-4">
-            <button class="bg-[#0d7d90] text-white px-6 py-2 rounded-lg hover:bg-[#0a6a7a] transition-colors">
-              Export Laporan
+          <div class="flex flex-wrap gap-4">
+            <button 
+              @click="openBudgetModal"
+              class="bg-[#0d7d90] text-white px-6 py-2 rounded-lg hover:bg-[#0a6a7a] transition-colors flex items-center gap-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Kelola Anggaran Tahunan
             </button>
             <button class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
-              Kelola Pengguna
+              Export Laporan
             </button>
             <button class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
               Settings
@@ -220,17 +254,52 @@
         </div>
       </div>
     </div>
+
+    <!-- Annual Budget Modal -->
+    <AnnualBudgetModal 
+      :isOpen="showBudgetModal" 
+      @close="closeBudgetModal"
+      @updated="handleBudgetUpdated"
+    />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
-import dashboardService from '@/services/dashboardService'
+import dashboardService, { type ChartData } from '@/services/dashboardService'
+import AnnualBudgetModal from '@/components/AnnualBudgetModal.vue'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+import { Line, Bar, Doughnut, Pie } from 'vue-chartjs'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 // User data
 const authStore = useAuthStore()
-const user = computed(() => authStore.user || { role: 'student' })
+const user = computed(() => authStore.user || {})
+const userRole = computed(() => authStore.role || (authStore.user?.role?.role_def) || null)
 
 // Real-time clock
 const currentTime = ref('')
@@ -271,8 +340,15 @@ const budget = ref({
   available: 0
 })
 
+// Charts data
+const chartsLoading = ref(false)
+const chartData = ref<ChartData | null>(null)
+
+// Annual Budget Modal
+const showBudgetModal = ref(false)
+
 // Methods
-const formatCurrency = (amount) => {
+const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('id-ID').format(amount || 0)
 }
 
@@ -345,18 +421,198 @@ const fetchDashboardStats = async () => {
   }
 }
 
+const fetchChartData = async () => {
+  chartsLoading.value = true
+  
+  try {
+    const response = await dashboardService.getChartData()
+    
+    if (response.success && response.data) {
+      chartData.value = response.data
+    }
+  } catch (err) {
+    console.error('Failed to fetch chart data:', err)
+  } finally {
+    chartsLoading.value = false
+  }
+}
+
+// Chart configurations
+const lineChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false
+    }
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        stepSize: 1
+      }
+    }
+  }
+}
+
+const doughnutChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom' as const
+    }
+  }
+}
+
+const pieChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom' as const
+    }
+  }
+}
+
+const barChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  indexAxis: 'y' as const,
+  plugins: {
+    legend: {
+      position: 'bottom' as const
+    }
+  },
+  scales: {
+    x: {
+      beginAtZero: true
+    }
+  }
+}
+
+// Chart data computed properties
+const monthlySubmissionsChartData = computed(() => {
+  if (!chartData.value) return { labels: [], datasets: [] }
+  
+  return {
+    labels: chartData.value.monthly_submissions.map(item => item.month),
+    datasets: [
+      {
+        label: 'Pengajuan TOR',
+        data: chartData.value.monthly_submissions.map(item => item.count),
+        borderColor: '#0d7d90',
+        backgroundColor: 'rgba(13, 125, 144, 0.1)',
+        tension: 0.4,
+        fill: true
+      }
+    ]
+  }
+})
+
+const statusDistributionChartData = computed(() => {
+  if (!chartData.value) return { labels: [], datasets: [] }
+  
+  const colors = [
+    '#0d7d90', // teal
+    '#10b981', // green
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#8b5cf6', // purple
+    '#3b82f6', // blue
+  ]
+  
+  return {
+    labels: chartData.value.status_distribution.map(item => item.label),
+    datasets: [
+      {
+        data: chartData.value.status_distribution.map(item => item.count),
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }
+    ]
+  }
+})
+
+const budgetByCategoryChartData = computed(() => {
+  if (!chartData.value) return { labels: [], datasets: [] }
+  
+  const colors = [
+    '#0d7d90',
+    '#10b981',
+    '#f59e0b',
+    '#ef4444',
+    '#8b5cf6',
+    '#3b82f6',
+    '#ec4899',
+    '#14b8a6'
+  ]
+  
+  return {
+    labels: chartData.value.budget_by_category.map(item => item.category),
+    datasets: [
+      {
+        data: chartData.value.budget_by_category.map(item => item.amount),
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }
+    ]
+  }
+})
+
+const budgetVsRealizationChartData = computed(() => {
+  if (!chartData.value) return { labels: [], datasets: [] }
+  
+  return {
+    labels: chartData.value.budget_vs_realization.map(item => item.activity),
+    datasets: [
+      {
+        label: 'Anggaran Diajukan',
+        data: chartData.value.budget_vs_realization.map(item => item.budget_submitted),
+        backgroundColor: '#0d7d90'
+      },
+      {
+        label: 'Realisasi',
+        data: chartData.value.budget_vs_realization.map(item => item.budget_used),
+        backgroundColor: '#10b981'
+      }
+    ]
+  }
+})
+
+// Annual Budget Modal handlers
+const openBudgetModal = () => {
+  showBudgetModal.value = true
+}
+
+const closeBudgetModal = () => {
+  showBudgetModal.value = false
+}
+
+const handleBudgetUpdated = () => {
+  // Refresh dashboard data when budget is updated
+  fetchDashboardStats()
+  fetchChartData()
+}
+
 // Lifecycle
-let clockInterval
+let clockInterval: number
 
 onMounted(() => {
   // Initialize clock
   updateClock()
   
   // Update clock every second
-  clockInterval = setInterval(updateClock, 1000)
+  clockInterval = setInterval(updateClock, 1000) as unknown as number
   
   // Fetch statistics from API
   fetchDashboardStats()
+  
+  // Fetch chart data
+  fetchChartData()
 })
 
 onUnmounted(() => {

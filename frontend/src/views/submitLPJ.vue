@@ -4,8 +4,8 @@
         <!-- Header -->
         <div class="rounded-2xl overflow-hidden mb-6">
         <div class="bg-[#0d7d90] text-[#f6f5f4] p-6">
-            <h1 class="text-2xl font-bold text-center">Pengajuan Laporan Pertanggungjawaban (LPJ)</h1>
-            <p class="text-center mt-2">Berdasarkan TOR yang telah disetujui</p>
+            <h1 class="text-2xl font-bold text-center">{{ isEditing ? 'Edit Laporan Pertanggungjawaban (LPJ)' : 'Pengajuan Laporan Pertanggungjawaban (LPJ)' }}</h1>
+            <p class="text-center mt-2">{{ isEditing ? 'Silakan perbarui data LPJ di bawah ini' : 'Berdasarkan TOR yang telah disetujui' }}</p>
         </div>
         </div>
 
@@ -239,9 +239,8 @@
                 type="submit"
                 class="px-8 py-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl hover:bg-[#03D26F] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <span v-if="!loading">Simpan Pengajuan LPJ</span>
+                    <span v-if="!loading">{{ isEditing ? 'Simpan Perubahan' : 'Simpan Pengajuan LPJ' }}</span>
                     <span v-else>Menyimpan...</span>
-                Ajukan LPJ
                 </button>
                 <router-link
                 to="/app/home"
@@ -258,12 +257,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import lpjService from '@/services/lpjService';
 import torService from '@/services/torService';
 import type { LpjData } from '@/services/lpjService';
 
 const router = useRouter();
+const route = useRoute();
+const isEditing = computed(() => !!route.params.id);
+const lpjId = ref<number | null>(null);
 
 const form = ref<LpjData>({
   tor_id: 0,
@@ -380,34 +382,80 @@ const handleSubmit = async () => {
   );
 
   let response;
-  if (hasFiles) {
-    const formData = new FormData();
-    formData.append('tor_id', String(form.value.tor_id));
-    formData.append('activity_result', form.value.activity_result);
-    formData.append('activity_evaluation', form.value.activity_evaluation);
-    formData.append('actual_date', form.value.actual_date);
-    formData.append('budget_used', String(form.value.budget_used));
+  
+  if (isEditing.value && lpjId.value) {
+    // EDITING MODE: Update existing LPJ
+    if (hasFiles) {
+      // If there are files, we need to use FormData
+      const formData = new FormData();
+      formData.append('activity_result', form.value.activity_result);
+      formData.append('activity_evaluation', form.value.activity_evaluation);
+      formData.append('actual_date', form.value.actual_date);
+      formData.append('budget_used', String(form.value.budget_used));
 
-    // photos (multiple)
-    if (attachments.value.photos && Array.isArray(attachments.value.photos)) {
-      (attachments.value.photos as File[]).forEach((f) => formData.append('photos[]', f));
-    }
-    if (attachments.value.photos_additional && Array.isArray(attachments.value.photos_additional)) {
-      (attachments.value.photos_additional as File[]).forEach((f) => formData.append('photos_additional[]', f));
-    }
-    if (attachments.value.daftar_hadir) formData.append('daftar_hadir', attachments.value.daftar_hadir as File);
-    if (attachments.value.bukti_pengeluaran) formData.append('bukti_pengeluaran', attachments.value.bukti_pengeluaran as File);
-    if (attachments.value.dokumen_lainnya) formData.append('dokumen_lainnya', attachments.value.dokumen_lainnya as File);
+      // Append files if they exist
+      if (attachments.value.photos && Array.isArray(attachments.value.photos)) {
+        (attachments.value.photos as File[]).forEach((f) => formData.append('photos[]', f));
+      }
+      if (attachments.value.photos_additional && Array.isArray(attachments.value.photos_additional)) {
+        (attachments.value.photos_additional as File[]).forEach((f) => formData.append('photos_additional[]', f));
+      }
+      if (attachments.value.daftar_hadir) formData.append('daftar_hadir', attachments.value.daftar_hadir as File);
+      if (attachments.value.bukti_pengeluaran) formData.append('bukti_pengeluaran', attachments.value.bukti_pengeluaran as File);
+      if (attachments.value.dokumen_lainnya) formData.append('dokumen_lainnya', attachments.value.dokumen_lainnya as File);
 
-    response = await lpjService.createLpjWithFiles(formData);
+      // For update with files, we need to use a workaround since FormData with PUT is tricky
+      formData.append('_method', 'PUT');
+      const authStore = { token: localStorage.getItem('token') };
+      const apiResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/lpj/${lpjId.value}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`
+        },
+        body: formData
+      });
+      const result = await apiResponse.json();
+      response = {
+        success: apiResponse.ok,
+        message: result.message,
+        data: result.data,
+        errors: result.errors
+      };
+    } else {
+      // No files, just update with JSON
+      response = await lpjService.updateLpj(lpjId.value, form.value);
+    }
   } else {
-    response = await lpjService.createLpj(form.value);
+    // CREATE MODE: Create new LPJ
+    if (hasFiles) {
+      const formData = new FormData();
+      formData.append('tor_id', String(form.value.tor_id));
+      formData.append('activity_result', form.value.activity_result);
+      formData.append('activity_evaluation', form.value.activity_evaluation);
+      formData.append('actual_date', form.value.actual_date);
+      formData.append('budget_used', String(form.value.budget_used));
+
+      // photos (multiple)
+      if (attachments.value.photos && Array.isArray(attachments.value.photos)) {
+        (attachments.value.photos as File[]).forEach((f) => formData.append('photos[]', f));
+      }
+      if (attachments.value.photos_additional && Array.isArray(attachments.value.photos_additional)) {
+        (attachments.value.photos_additional as File[]).forEach((f) => formData.append('photos_additional[]', f));
+      }
+      if (attachments.value.daftar_hadir) formData.append('daftar_hadir', attachments.value.daftar_hadir as File);
+      if (attachments.value.bukti_pengeluaran) formData.append('bukti_pengeluaran', attachments.value.bukti_pengeluaran as File);
+      if (attachments.value.dokumen_lainnya) formData.append('dokumen_lainnya', attachments.value.dokumen_lainnya as File);
+
+      response = await lpjService.createLpjWithFiles(formData);
+    } else {
+      response = await lpjService.createLpj(form.value);
+    }
   }
 
   loading.value = false;
 
   if (response.success) {
-    successMessage.value = response.message || 'LPJ berhasil dibuat!';
+    successMessage.value = response.message || (isEditing.value ? 'LPJ berhasil diperbarui!' : 'LPJ berhasil dibuat!');
     setTimeout(() => {
       router.push('/app/home');
     }, 1500);
@@ -416,7 +464,7 @@ const handleSubmit = async () => {
       errors.value = response.errors;
       errorMessage.value = 'Ada kesalahan pada form. Silakan periksa kembali.';
     } else {
-      errorMessage.value = response.message || 'Terjadi kesalahan saat membuat LPJ';
+      errorMessage.value = response.message || (isEditing.value ? 'Terjadi kesalahan saat memperbarui LPJ' : 'Terjadi kesalahan saat membuat LPJ');
     }
   }
 };
@@ -434,18 +482,50 @@ const handleFileUpload = (fieldName: string, event: Event) => {
 };
 
 onMounted(async () => {
-  // Fetch approved TORs from API
-  try {
-    const response = await torService.getMyApprovedTors();
-    if (response.success && response.data) {
-      approvedTors.value = response.data;
-    } else {
-      console.error('Failed to fetch approved TORs:', response.message);
-      errorMessage.value = 'Gagal memuat daftar TOR yang disetujui';
+  // Check if editing
+  if (route.params.id) {
+    lpjId.value = parseInt(route.params.id as string);
+    loading.value = true;
+    try {
+      const response = await lpjService.getLpj(lpjId.value);
+      if (response.success && response.data) {
+        const data = response.data;
+        form.value = {
+          tor_id: data.tor_id,
+          activity_result: data.activity_result,
+          activity_evaluation: data.activity_evaluation,
+          actual_date: data.actual_date,
+          budget_used: data.budget_used,
+        };
+        // Load the TOR for display in the sidebar
+        if (data.tor_id) {
+          const torResponse = await torService.getTor(data.tor_id);
+          if (torResponse.success && torResponse.data) {
+            approvedTors.value = [torResponse.data];
+          }
+        }
+      } else {
+        errorMessage.value = 'Gagal memuat data LPJ';
+      }
+    } catch (error) {
+      errorMessage.value = 'Terjadi kesalahan saat memuat data';
+    } finally {
+      loading.value = false;
     }
-  } catch (error) {
-    console.error('Error fetching approved TORs:', error);
-    errorMessage.value = 'Terjadi kesalahan saat memuat data TOR';
+  } else {
+    // Fetch approved TORs from API for new LPJ
+    try {
+      const response = await torService.getMyApprovedTors();
+      if (response.success && response.data) {
+        approvedTors.value = response.data;
+      } else {
+        console.error('Failed to fetch approved TORs:', response.message);
+        errorMessage.value = 'Gagal memuat daftar TOR yang disetujui';
+      }
+    } catch (error) {
+      console.error('Error fetching approved TORs:', error);
+      errorMessage.value = 'Terjadi kesalahan saat memuat data TOR';
+    }
   }
 });
 </script>

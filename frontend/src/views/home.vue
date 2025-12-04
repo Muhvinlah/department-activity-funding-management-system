@@ -611,15 +611,25 @@ const fetchSubmissions = async () => {
       console.log('Student TOR Response:', torResponse);
       console.log('Student LPJ Response:', lpjResponse);
       
-      const torSubmissions = (torResponse.data || []).map((tor: any) => ({
-        id: tor.tor_id,
-        activityName: tor.activity_name,
-        budget: tor.budget_submitted,
-        schedule: `${tor.start_date} - ${tor.end_date}`,
-        status: tor.status,
-        type: 'tor',
-        revisionNotes: getLatestRevisionNote(tor.approvals)
-      }));
+      // Get all TOR IDs that have an associated LPJ
+      const torIdsWithLpj = (lpjResponse.data || [])
+        .map((lpj: any) => lpj.tor_id)
+        .filter((id: any) => id !== null && id !== undefined);
+      
+      console.log('TOR IDs with LPJ:', torIdsWithLpj);
+      
+      // Filter out TORs that already have an LPJ
+      const torSubmissions = (torResponse.data || [])
+        .filter((tor: any) => !torIdsWithLpj.includes(tor.tor_id))
+        .map((tor: any) => ({
+          id: tor.tor_id,
+          activityName: tor.activity_name,
+          budget: tor.budget_submitted,
+          schedule: `${tor.start_date} - ${tor.end_date}`,
+          status: tor.status,
+          type: 'tor',
+          revisionNotes: getLatestRevisionNote(tor.approvals)
+        }));
       
       const lpjSubmissions = (lpjResponse.data || []).map((lpj: any) => ({
         id: lpj.lpj_id,
@@ -631,7 +641,7 @@ const fetchSubmissions = async () => {
         revisionNotes: getLatestRevisionNote(lpj.approvals)
       }));
       
-      console.log('Student TOR Submissions:', torSubmissions);
+      console.log('Student TOR Submissions (filtered):', torSubmissions);
       console.log('Student LPJ Submissions:', lpjSubmissions);
       
       studentSubmissions.value = [...torSubmissions, ...lpjSubmissions];
@@ -651,7 +661,7 @@ const fetchSubmissions = async () => {
         submitterName: tor.user?.full_name || 'Unknown',
         department: tor.user?.department || 'Unknown',
         budget: tor.budget_submitted,
-        submittedAt: tor.sub_date,
+        submittedAt: tor.created_at,
         status: tor.status,
         currentStage: tor.current_stage,
         supportingDocuments: tor.attachments || []

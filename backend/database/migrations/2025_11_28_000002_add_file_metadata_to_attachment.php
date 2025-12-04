@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    // Run the Migrations
     public function up(): void
     {
         Schema::table('attachment', function (Blueprint $table) {
@@ -17,9 +15,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    // Reverse the Migrations
     public function down(): void
     {
         Schema::table('attachment', function (Blueprint $table) {

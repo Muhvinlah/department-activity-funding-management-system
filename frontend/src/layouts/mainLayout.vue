@@ -26,7 +26,7 @@
                                   <div class="mr-3">
                                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                   </div>
-                                  Account
+                                  Profil
                               </a>
                             </li>
                             <hr class="border-[#f6f5f4]">
@@ -35,7 +35,7 @@
                                   <div class="mr-3 text-[#d80900]">
                                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                                   </div>
-                                  Logout
+                                  Keluar
                               </a>
                             </li>
                         </ul>
@@ -48,7 +48,7 @@
             <div class="max-w-full mx-auto flex flex-col px-5 sm:flex-row space-y-2 sm:space-y-0 sm:space-x-8">
                 <button @click="goToHome"
                 class="px-2 py-2 text-[#0d7d90] bg-white rounded-xl font-semibold text-sm md:text-base hover:ring-2 hover:ring-[#F6F5F4]/50">
-                halaman utama
+                Beranda
                 </button>
                 <button v-if="canAccessPengajuan" @click="goToPengajuan"
                 class="px-2 py-2 text-[#0d7d90] bg-white rounded-xl font-semibold text-sm md:text-base hover:ring-2 hover:ring-[#F6F5F4]/50">

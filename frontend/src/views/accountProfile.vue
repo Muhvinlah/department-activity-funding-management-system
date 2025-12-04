@@ -2,7 +2,7 @@
     <!-- Main Content -->
     <div class="flex-1 p-6">
         <div class="max-w-4xl mx-auto">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200">
                 <!-- Card Header -->
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-800">Detail akun</h2>
@@ -21,7 +21,7 @@
                             id="name"
                             v-model="form.name"
                             class="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Enter your full name"
+                            placeholder="Masukkan nama lengkap"
                             />
                             <p v-if="errors.name" class="mt-1 text-sm text-red-600">{{ errors.name[0] }}</p>
                         </div>
@@ -36,7 +36,7 @@
                             id="email"
                             v-model="form.email"
                             class="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Enter your email"
+                            placeholder="Masukkan email"
                             />
                             <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email[0] }}</p>
                         </div>
@@ -57,7 +57,7 @@
                                 id="current_password"
                                 v-model="form.current_password"
                                 class="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Enter current password"
+                                placeholder="Masukkan password saat ini"
                             />
                             <p v-if="errors.current_password" class="mt-1 text-sm text-red-600">{{ errors.current_password[0] }}</p>
                             </div>
@@ -72,7 +72,7 @@
                                 id="new_password"
                                 v-model="form.new_password"
                                 class="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Enter new password"
+                                placeholder="Masukkan password baru"
                             />
                             <p v-if="errors.new_password" class="mt-1 text-sm text-red-600">{{ errors.new_password[0] }}</p>
                             </div>
@@ -87,7 +87,7 @@
                                 id="new_password_confirmation"
                                 v-model="form.new_password_confirmation"
                                 class="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Confirm new password"
+                                placeholder="Masukkan konfirmasi password baru"
                             />
                             </div>
                         </div>
@@ -100,7 +100,7 @@
                             class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-sm text-[#F6F5F4] bg-[#0D7D90] hover:bg-[#0D7D90]/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0D7D90] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                             <i v-if="loading" class="fas fa-spinner fa-spin mr-2"></i>
-                            Edit Data
+                            Simpan Perubahan
                             </button>
                         </div>
                     </form>

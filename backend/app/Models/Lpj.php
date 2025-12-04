@@ -30,7 +30,7 @@ class Lpj extends Model
     ];
 
     protected $casts = [
-        'sub_date' => 'datetime',
+        'updated_at' => 'datetime',
         'actual_date' => 'date',
         'budget_used' => 'decimal:2',
     ];
@@ -197,7 +197,7 @@ class Lpj extends Model
         
         $this->status = $newStatus;
         $this->current_stage = $newStatus;
-        $this->sub_date = now(); // Update submission date
+        $this->updated_at = now(); // Update submission date
         $this->save();
         
         $this->addStatusHistory($newStatus, 'LPJ resubmitted after revision', $userId);

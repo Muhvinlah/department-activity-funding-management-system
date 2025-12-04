@@ -52,11 +52,14 @@ class DashboardController extends Controller
 
                 $budgetInfo = null;
                 if ($annualBudget) {
-                    $usedBudget = Tor::where('status', 'approved_by_head')
-                        ->whereHas('annualBudget', function ($query) use ($currentYear) {
-                            $query->where('tahun', $currentYear);
+                    // Calculate used budget from approved LPJs (actual spent money)
+                    $usedBudget = Lpj::where('status', 'approved_by_head')
+                        ->whereHas('tor', function ($query) use ($currentYear) {
+                            $query->whereHas('annualBudget', function ($q) use ($currentYear) {
+                                $q->where('tahun', $currentYear);
+                            });
                         })
-                        ->sum('budget_submitted');
+                        ->sum('budget_used');
 
                     $budgetInfo = [
                         'total_budget' => (float) $annualBudget->budget,
@@ -192,7 +195,7 @@ class DashboardController extends Controller
                 ];
             }
 
-            $tors = $torQuery->orderBy('sub_date', 'desc')
+            $tors = $torQuery->orderBy('created_at', 'desc')
                 ->paginate($request->get('per_page', 15));
 
             // Statistics for filtered data
@@ -238,8 +241,8 @@ class DashboardController extends Controller
             $chartData = Cache::remember($cacheKey, 600, function () use ($year) {
 
                 // Monthly TOR submissions
-                $monthlyTorSubmissions = Tor::selectRaw('EXTRACT(MONTH FROM sub_date) as month, COUNT(*) as count')
-                    ->whereYear('sub_date', $year)
+                $monthlyTorSubmissions = Tor::selectRaw('EXTRACT(MONTH FROM created_at) as month, COUNT(*) as count')
+                    ->whereYear('created_at', $year)
                     ->groupBy('month')
                     ->orderBy('month')
                     ->get()
@@ -411,7 +414,7 @@ class DashboardController extends Controller
                 });
 
             // Monthly budget usage
-            $monthlyUsage = Tor::selectRaw('EXTRACT(MONTH FROM sub_date) as month, SUM(budget_submitted) as amount')
+            $monthlyUsage = Tor::selectRaw('EXTRACT(MONTH FROM created_at) as month, SUM(budget_submitted) as amount')
                 ->where('status', 'approved_by_head')
                 ->where('budget_id', $annualBudget->budget_id)
                 ->groupBy('month')

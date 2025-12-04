@@ -40,7 +40,7 @@ class Tor extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'sub_date' => 'datetime',
+        'updated_at' => 'datetime',
         'budget_submitted' => 'decimal:2',
     ];
 
@@ -195,7 +195,7 @@ class Tor extends Model
         
         $this->status = $newStatus;
         $this->current_stage = $newStatus;
-        $this->sub_date = now(); // Update submission date
+        $this->updated_at = now(); // Update submission date
         $this->save();
         
         $this->addStatusHistory($newStatus, 'TOR resubmitted after revision', $userId);

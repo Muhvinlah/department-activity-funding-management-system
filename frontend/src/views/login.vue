@@ -122,7 +122,7 @@
       } else if (authStore.role && ['sekretaris jurusan', 'admin jurusan', 'ketua jurusan'].includes(authStore.role)) {
         router.push('/app/home');
       } else {
-        router.push('/app/home');
+        router.push('/login');
       }
     } catch (error: any) {
       errorMessage.value = error.response?.data?.message || 'Login gagal. Periksa kembali NIM dan password.';

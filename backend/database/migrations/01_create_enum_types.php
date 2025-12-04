@@ -7,10 +7,14 @@ return new class extends Migration
 {
     public function up()
     {
+        // Drop types if they exist to avoid errors during refresh
+        DB::statement("DROP TYPE IF EXISTS status CASCADE");
+        DB::statement("DROP TYPE IF EXISTS approval_action CASCADE");
+
         // Create status ENUM type
         DB::statement("
             CREATE TYPE status AS ENUM (
-                'under_review',
+                'submitted',
                 'reviewed_by_secretary',
                 'verified_by_admin',
                 'approved_by_head',

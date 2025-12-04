@@ -414,11 +414,10 @@ const isPDF = (fileName: string) => {
 
 const getStatusBadgeClass = (status?: string) => {
   const statusClasses: Record<string, string> = {
-    'under_review': 'bg-blue-100 text-blue-800',
+    'submitted': 'bg-blue-100 text-blue-800',
     'reviewed_by_secretary': 'bg-purple-100 text-purple-800',
     'verified_by_admin': 'bg-indigo-100 text-indigo-800',
     'approved_by_head': 'bg-green-100 text-green-800',
-    'needs_revision': 'bg-orange-100 text-orange-800',
     'needs_revision_by_secretary': 'bg-orange-100 text-orange-800',
     'needs_revision_by_admin': 'bg-orange-100 text-orange-800',
     'needs_revision_by_head': 'bg-orange-100 text-orange-800',

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('pic', 100);
             $table->string('status', 50);
             $table->string('current_stage', 50)->default('under_review');
-            $table->timestamp('sub_date')->useCurrent();
+            $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
             $table->timestamp('deleted_at')->nullable();
 

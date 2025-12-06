@@ -191,28 +191,6 @@
               {{ errors.category_id[0] }}
             </p>
           </div>
-
-          <!-- Budget -->
-          <div class="hidden">
-            <label for="budget_id" class="block text-sm font-medium text-[#F6F5F4] mb-1">
-              Tahun Anggaran <span class="text-[#D80300]">*</span>
-            </label>
-            <select
-              id="budget_id"
-              v-model.number="form.budget_id"
-              @blur="validateField('budget_id')"
-              class="w-full px-4 py-2 bg-[#F6F5F4] border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50"
-              :class="errors.budget_id ? 'border-[#D80300]' : 'border-[#F6F5F4]'"
-            >
-              <option value="">-- Pilih Tahun Anggaran --</option>
-              <option v-for="budget in budgets" :key="budget.budget_id" :value="budget.budget_id">
-                {{ budget.year }}
-              </option>
-            </select>
-            <p v-if="errors.budget_id" class="mt-1 text-xs text-[#D80300]">
-              {{ errors.budget_id[0] }}
-            </p>
-          </div>
         </div>
 
         <!-- File Upload Section -->
@@ -314,7 +292,7 @@ const form = ref<TorData>({
   budget_submitted: 0,
   pic: '',
   category_id: 0,
-  budget_id: 0,
+  // budget_id removed - auto-assigned by backend
 });
 
 const errors = ref<Record<string, string[]>>({});
@@ -322,7 +300,7 @@ const loading = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
 const categories = ref<any[]>([]);
-const budgets = ref<any[]>([]);
+// budgets array removed - no longer needed
 const attachments = ref<Record<string, File | null>>({
   rab: null,
   supporting: null,
@@ -472,21 +450,7 @@ onMounted(async () => {
     categories.value = [];
   }
 
-  // Fetch budgets
-  budgets.value = [
-    { budget_id: 1, year: '2025' },
-    { budget_id: 2, year: '2026' },
-  ];
-    
-  // Auto-select tahun anggaran based on start_date
-  watch(() => form.value.start_date, (newDate) => {
-    if (!newDate) return;
-    const year = newDate.split('-')[0];
-    const match = budgets.value.find(b => String(b.year) === year);
-    if (match) {
-      form.value.budget_id = match.budget_id;
-    }
-  });
+  // Auto-select logic removed - budget_id now assigned by backend
 
   // Check if editing
   if (route.params.id) {
@@ -506,7 +470,7 @@ onMounted(async () => {
           budget_submitted: data.budget_submitted,
           pic: data.pic,
           category_id: data.category_id,
-          budget_id: data.budget_id,
+          // budget_id removed - will be auto-assigned by backend if start_date changes
         };
         // Note: Files cannot be pre-populated in file inputs for security reasons
         // We could show existing file names if needed

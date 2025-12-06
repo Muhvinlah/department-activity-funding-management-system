@@ -46,13 +46,20 @@ export interface DashboardSummary {
 export interface ChartData {
   monthly_submissions: Array<{
     month: string;
-    count: number;
+    tor_count: number;
+    lpj_count: number;
+    total_count: number;
   }>;
   budget_by_category: Array<{
     category: string;
     amount: number;
   }>;
+  lpj_budget_by_category: Array<{
+    category: string;
+    amount: number;
+  }>;
   status_distribution: Array<{
+    type: string;
     status: string;
     count: number;
     label: string;

@@ -54,10 +54,8 @@ class DashboardController extends Controller
                 if ($annualBudget) {
                     // Calculate used budget from approved LPJs (actual spent money)
                     $usedBudget = Lpj::where('status', 'approved_by_head')
-                        ->whereHas('tor', function ($query) use ($currentYear) {
-                            $query->whereHas('annualBudget', function ($q) use ($currentYear) {
-                                $q->where('tahun', $currentYear);
-                            });
+                        ->whereHas('tor', function ($query) use ($annualBudget) {
+                            $query->where('budget_id', $annualBudget->budget_id);
                         })
                         ->sum('budget_used');
 
@@ -236,11 +234,14 @@ class DashboardController extends Controller
         try {
             $year = $request->get('year', date('Y'));
             $cacheKey = "dashboard_charts_{$year}";
+            
+            // Get annual budget for the year
+            $annualBudget = AnnualBudget::where('tahun', $year)->first();
 
             // Cache hasil chart selama 10 menit
-            $chartData = Cache::remember($cacheKey, 600, function () use ($year) {
+            $chartData = Cache::remember($cacheKey, 600, function () use ($year, $annualBudget) {
 
-                // Monthly TOR submissions
+                // Monthly TOR and LPJ submissions
                 $monthlyTorSubmissions = Tor::selectRaw('EXTRACT(MONTH FROM created_at) as month, COUNT(*) as count')
                     ->whereYear('created_at', $year)
                     ->groupBy('month')
@@ -248,18 +249,28 @@ class DashboardController extends Controller
                     ->get()
                     ->pluck('count', 'month');
 
-                $monthlyTorData = [];
+                $monthlyLpjSubmissions = Lpj::selectRaw('EXTRACT(MONTH FROM created_at) as month, COUNT(*) as count')
+                    ->whereYear('created_at', $year)
+                    ->groupBy('month')
+                    ->orderBy('month')
+                    ->get()
+                    ->pluck('count', 'month');
+
+                $monthlySubmissionsData = [];
                 for ($i = 1; $i <= 12; $i++) {
-                    $monthlyTorData[] = [
+                    $monthlySubmissionsData[] = [
                         'month' => date('M', mktime(0, 0, 0, $i, 1)),
-                        'count' => $monthlyTorSubmissions->get($i, 0)
+                        'tor_count' => $monthlyTorSubmissions->get($i, 0),
+                        'lpj_count' => $monthlyLpjSubmissions->get($i, 0),
+                        'total_count' => $monthlyTorSubmissions->get($i, 0) + $monthlyLpjSubmissions->get($i, 0)
                     ];
                 }
 
-                // Budget usage by category
+                // Budget usage by category (current year only)
                 $budgetByCategory = Tor::select('activity_category.category_def', DB::raw('SUM(tor.budget_submitted) as total_budget'))
                     ->join('activity_category', 'tor.category_id', '=', 'activity_category.category_id')
                     ->where('tor.status', 'approved_by_head')
+                    ->where('tor.budget_id', $annualBudget->budget_id)
                     ->groupBy('activity_category.category_def')
                     ->get()
                     ->map(function ($item) {
@@ -269,22 +280,40 @@ class DashboardController extends Controller
                         ];
                     });
 
-                // TOR status distribution
-                $statusDistribution = Tor::select('status', DB::raw('COUNT(*) as count'))
+                // TOR and LPJ status distribution (current year only)
+                $torStatusDistribution = Tor::select('status', DB::raw('COUNT(*) as count'))
+                    ->whereYear('created_at', $year)
                     ->groupBy('status')
                     ->get()
                     ->map(function ($item) {
                         return [
+                            'type' => 'TOR',
                             'status' => $item->status,
                             'count' => $item->count,
-                            'label' => ucwords(str_replace('_', ' ', $item->status))
+                            'label' => 'TOR - ' . ucwords(str_replace('_', ' ', $item->status))
                         ];
                     });
 
-                // Budget vs Realization
+                $lpjStatusDistribution = Lpj::select('status', DB::raw('COUNT(*) as count'))
+                    ->whereYear('created_at', $year)
+                    ->groupBy('status')
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'type' => 'LPJ',
+                            'status' => $item->status,
+                            'count' => $item->count,
+                            'label' => 'LPJ - ' . ucwords(str_replace('_', ' ', $item->status))
+                        ];
+                    });
+
+                $statusDistribution = $torStatusDistribution->concat($lpjStatusDistribution);
+
+                // Budget vs Realization (current year only)
                 $budgetVsRealization = Tor::select('tor.tor_id', 'tor.activity_name', 'tor.budget_submitted', 'lpj.budget_used')
                     ->leftJoin('lpj', 'tor.tor_id', '=', 'lpj.tor_id')
                     ->where('tor.status', 'approved_by_head')
+                    ->where('tor.budget_id', $annualBudget->budget_id)
                     ->whereNotNull('lpj.lpj_id')
                     ->limit(10)
                     ->get()
@@ -297,10 +326,19 @@ class DashboardController extends Controller
                         ];
                     });
 
-                // Approval timeline
-                $approvalTimeline = DB::table('status_hist')
-                    ->select('status', DB::raw('AVG(EXTRACT(EPOCH FROM (timestamp_aksi - LAG(timestamp_aksi) OVER (PARTITION BY tor_id ORDER BY timestamp_aksi)))/86400) as avg_days'))
-                    ->whereNotNull('tor_id')
+                // Approval timeline (current year only)
+                // Use subquery to calculate time differences first, then aggregate
+                $approvalTimeline = DB::table(DB::raw("(
+                    SELECT 
+                        sh.status,
+                        EXTRACT(EPOCH FROM (sh.timestamp_aksi - LAG(sh.timestamp_aksi) OVER (PARTITION BY sh.tor_id ORDER BY sh.timestamp_aksi)))/86400 as days_diff
+                    FROM status_hist sh
+                    INNER JOIN tor t ON sh.tor_id = t.tor_id
+                    WHERE sh.tor_id IS NOT NULL
+                    AND EXTRACT(YEAR FROM t.created_at) = {$year}
+                ) as time_diffs"))
+                    ->select('status', DB::raw('AVG(days_diff) as avg_days'))
+                    ->whereNotNull('days_diff')
                     ->groupBy('status')
                     ->get()
                     ->map(function ($item) {
@@ -310,9 +348,26 @@ class DashboardController extends Controller
                         ];
                     });
 
+                // LPJ budget by category (current year only)
+                $lpjBudgetByCategory = Lpj::select('activity_category.category_def', DB::raw('SUM(lpj.budget_used) as total_budget'))
+                    ->join('tor', 'lpj.tor_id', '=', 'tor.tor_id')
+                    ->join('activity_category', 'tor.category_id', '=', 'activity_category.category_id')
+                    ->where('lpj.status', 'approved_by_head')
+                    ->where('tor.budget_id', $annualBudget->budget_id)
+                    ->groupBy('activity_category.category_def')
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'category' => $item->category_def,
+                            'amount' => (float) $item->total_budget
+                        ];
+                    });
+
+
                 return [
-                    'monthly_submissions' => $monthlyTorData,
+                    'monthly_submissions' => $monthlySubmissionsData,
                     'budget_by_category' => $budgetByCategory,
+                    'lpj_budget_by_category' => $lpjBudgetByCategory,
                     'status_distribution' => $statusDistribution,
                     'budget_vs_realization' => $budgetVsRealization,
                     'approval_timeline' => $approvalTimeline,

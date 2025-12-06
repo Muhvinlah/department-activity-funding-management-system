@@ -176,40 +176,12 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <!-- Monthly Submissions Chart -->
           <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Trend Pengajuan Bulanan</h2>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Trend Pengajuan TOR & LPJ Bulanan</h2>
             <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
               <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
             </div>
             <div v-else-if="chartData" class="h-64">
               <Line :data="monthlySubmissionsChartData" :options="lineChartOptions" />
-            </div>
-            <div v-else class="h-64 flex items-center justify-center text-gray-400">
-              <p>No data available</p>
-            </div>
-          </div>
-
-          <!-- Status Distribution Chart -->
-          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Status Kegiatan</h2>
-            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
-            </div>
-            <div v-else-if="chartData" class="h-64">
-              <Doughnut :data="statusDistributionChartData" :options="doughnutChartOptions" />
-            </div>
-            <div v-else class="h-64 flex items-center justify-center text-gray-400">
-              <p>No data available</p>
-            </div>
-          </div>
-
-          <!-- Budget by Category Chart -->
-          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Anggaran per Kategori</h2>
-            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
-            </div>
-            <div v-else-if="chartData" class="h-64">
-              <Pie :data="budgetByCategoryChartData" :options="pieChartOptions" />
             </div>
             <div v-else class="h-64 flex items-center justify-center text-gray-400">
               <p>No data available</p>
@@ -224,6 +196,62 @@
             </div>
             <div v-else-if="chartData" class="h-64">
               <Bar :data="budgetVsRealizationChartData" :options="barChartOptions" />
+            </div>
+            <div v-else class="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available</p>
+            </div>
+          </div>
+
+          <!-- TOR Status Distribution Chart -->
+          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Status TOR</h2>
+            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+            </div>
+            <div v-else-if="chartData" class="h-64">
+              <Doughnut :data="torStatusChartData" :options="doughnutChartOptions" />
+            </div>
+            <div v-else class="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available</p>
+            </div>
+          </div>
+
+          <!-- LPJ Status Distribution Chart -->
+          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Status LPJ</h2>
+            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+            </div>
+            <div v-else-if="chartData" class="h-64">
+              <Doughnut :data="lpjStatusChartData" :options="doughnutChartOptions" />
+            </div>
+            <div v-else class="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available</p>
+            </div>
+          </div>
+
+          <!-- TOR Budget by Category Chart -->
+          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Anggaran TOR per Kategori</h2>
+            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+            </div>
+            <div v-else-if="chartData" class="h-64">
+              <Pie :data="torBudgetByCategoryChartData" :options="pieChartOptions" />
+            </div>
+            <div v-else class="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available</p>
+            </div>
+          </div>
+
+          <!-- LPJ Budget by Category Chart -->
+          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Realisasi LPJ per Kategori</h2>
+            <div v-if="chartsLoading" class="h-64 flex items-center justify-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+            </div>
+            <div v-else-if="chartData" class="h-64">
+              <Pie :data="lpjBudgetByCategoryChartData" :options="pieChartOptions" />
             </div>
             <div v-else class="h-64 flex items-center justify-center text-gray-400">
               <p>No data available</p>
@@ -501,18 +529,28 @@ const monthlySubmissionsChartData = computed(() => {
     datasets: [
       {
         label: 'Pengajuan TOR',
-        data: chartData.value.monthly_submissions.map(item => item.count),
+        data: chartData.value.monthly_submissions.map(item => item.tor_count),
         borderColor: '#0d7d90',
-        backgroundColor: 'rgba(13, 125, 144, 0.1)',
+        backgroundColor: 'rgba(13, 125, 144, 0.5)',
         tension: 0.4,
-        fill: true
+        fill: false
+      },
+      {
+        label: 'Pengajuan LPJ',
+        data: chartData.value.monthly_submissions.map(item => item.lpj_count),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.5)',
+        tension: 0.4,
+        fill: false
       }
     ]
   }
 })
 
-const statusDistributionChartData = computed(() => {
+const torStatusChartData = computed(() => {
   if (!chartData.value) return { labels: [], datasets: [] }
+  
+  const torData = chartData.value.status_distribution.filter(item => item.type === 'TOR')
   
   const colors = [
     '#0d7d90', // teal
@@ -524,10 +562,10 @@ const statusDistributionChartData = computed(() => {
   ]
   
   return {
-    labels: chartData.value.status_distribution.map(item => item.label),
+    labels: torData.map(item => ucwords(item.status.replace(/_/g, ' '))),
     datasets: [
       {
-        data: chartData.value.status_distribution.map(item => item.count),
+        data: torData.map(item => item.count),
         backgroundColor: colors,
         borderWidth: 2,
         borderColor: '#ffffff'
@@ -536,7 +574,34 @@ const statusDistributionChartData = computed(() => {
   }
 })
 
-const budgetByCategoryChartData = computed(() => {
+const lpjStatusChartData = computed(() => {
+  if (!chartData.value) return { labels: [], datasets: [] }
+  
+  const lpjData = chartData.value.status_distribution.filter(item => item.type === 'LPJ')
+  
+  const colors = [
+    '#0d7d90', // teal
+    '#10b981', // green
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#8b5cf6', // purple
+    '#3b82f6', // blue
+  ]
+  
+  return {
+    labels: lpjData.map(item => ucwords(item.status.replace(/_/g, ' '))),
+    datasets: [
+      {
+        data: lpjData.map(item => item.count),
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }
+    ]
+  }
+})
+
+const torBudgetByCategoryChartData = computed(() => {
   if (!chartData.value) return { labels: [], datasets: [] }
   
   const colors = [
@@ -562,6 +627,38 @@ const budgetByCategoryChartData = computed(() => {
     ]
   }
 })
+
+const lpjBudgetByCategoryChartData = computed(() => {
+  if (!chartData.value || !chartData.value.lpj_budget_by_category) return { labels: [], datasets: [] }
+  
+  const colors = [
+    '#0d7d90',
+    '#10b981',
+    '#f59e0b',
+    '#ef4444',
+    '#8b5cf6',
+    '#3b82f6',
+    '#ec4899',
+    '#14b8a6'
+  ]
+  
+  return {
+    labels: chartData.value.lpj_budget_by_category.map(item => item.category),
+    datasets: [
+      {
+        data: chartData.value.lpj_budget_by_category.map(item => item.amount),
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }
+    ]
+  }
+})
+
+// Helper function to capitalize words
+const ucwords = (str: string) => {
+  return str.replace(/\b\w/g, l => l.toUpperCase())
+}
 
 const budgetVsRealizationChartData = computed(() => {
   if (!chartData.value) return { labels: [], datasets: [] }

@@ -36,9 +36,12 @@ class AnnualBudget extends Model
      */
     public function getRemainingBudget()
     {
-        $usedBudget = $this->tors()
-            ->where('status', 'approved_by_head')
-            ->sum('budget_submitted');
+        // Calculate used budget from approved LPJs (actual spent money)
+        $usedBudget = \App\Models\Lpj::where('status', 'approved_by_head')
+            ->whereHas('tor', function ($query) {
+                $query->where('budget_id', $this->budget_id);
+            })
+            ->sum('budget_used');
 
         return $this->budget - $usedBudget;
     }
@@ -48,9 +51,16 @@ class AnnualBudget extends Model
      */
     public function getBudgetUsagePercentage()
     {
-        $usedBudget = $this->tors()
-            ->where('status', 'approved_by_head')
-            ->sum('budget_submitted');
+        // Calculate used budget from approved LPJs (actual spent money)
+        $usedBudget = \App\Models\Lpj::where('status', 'approved_by_head')
+            ->whereHas('tor', function ($query) {
+                $query->where('budget_id', $this->budget_id);
+            })
+            ->sum('budget_used');
+
+        if ($this->budget == 0) {
+            return 0;
+        }
 
         return ($usedBudget / $this->budget) * 100;
     }

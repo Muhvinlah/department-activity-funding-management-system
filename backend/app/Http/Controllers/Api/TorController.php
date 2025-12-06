@@ -67,7 +67,7 @@ class TorController extends Controller
             'budget_submitted' => 'required|numeric|min:0',
             'pic' => 'required|string|max:100',
             'category_id' => 'required|exists:activity_category,category_id',
-            'budget_id' => 'required|exists:annual_budget,budget_id',
+            // budget_id removed - will be auto-assigned
         ]);
 
         if ($validator->fails()) {
@@ -78,6 +78,17 @@ class TorController extends Controller
         }
 
         try {
+            // Auto-assign budget_id based on activity start_date year
+            $activityYear = date('Y', strtotime($request->start_date));
+            $annualBudget = \App\Models\AnnualBudget::where('tahun', $activityYear)->first();
+            
+            if (!$annualBudget) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "No budget found for year {$activityYear}. Please contact admin to create annual budget."
+                ], 400);
+            }
+
             $tor = Tor::create([
                 'activity_name' => $request->activity_name,
                 'activity_background' => $request->activity_background,
@@ -88,7 +99,7 @@ class TorController extends Controller
                 'budget_submitted' => $request->budget_submitted,
                 'pic' => $request->pic,
                 'category_id' => $request->category_id,
-                'budget_id' => $request->budget_id,
+                'budget_id' => $annualBudget->budget_id, // Auto-assigned
                 'user_id' => Auth::guard('api')->id(),
                 'status' => 'submitted',
                 'current_stage' => 'submitted',
@@ -147,7 +158,7 @@ class TorController extends Controller
             'budget_submitted' => 'numeric|min:0',
             'pic' => 'string|max:100',
             'category_id' => 'exists:activity_category,category_id',
-            'budget_id' => 'exists:annual_budget,budget_id',
+            // budget_id removed - will be auto-assigned if start_date changes
         ]);
 
         if ($validator->fails()) {
@@ -176,8 +187,24 @@ class TorController extends Controller
                 ], 400);
             }
 
+            // If start_date is being updated, auto-reassign budget_id
+            $updateData = $request->all();
+            if ($request->has('start_date')) {
+                $activityYear = date('Y', strtotime($request->start_date));
+                $annualBudget = \App\Models\AnnualBudget::where('tahun', $activityYear)->first();
+                
+                if (!$annualBudget) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "No budget found for year {$activityYear}. Please contact admin."
+                    ], 400);
+                }
+                
+                $updateData['budget_id'] = $annualBudget->budget_id;
+            }
+
             $oldStatus = $tor->status;
-            $tor->update($request->all());
+            $tor->update($updateData);
             $tor->addStatusHistory('updated', 'TOR updated', Auth::guard('api')->id());
 
             // If TOR was in revision, automatically resubmit

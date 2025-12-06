@@ -14,7 +14,7 @@ export interface TorData {
   budget_submitted: number;
   pic: string;
   category_id: number;
-  budget_id: number;
+  budget_id?: number; // Optional - auto-assigned by backend based on start_date
 }
 
 export interface TorResponse {

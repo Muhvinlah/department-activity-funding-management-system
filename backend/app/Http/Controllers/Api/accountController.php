@@ -46,22 +46,22 @@ class AccountController extends Controller
 
         // Update only the fields that were provided
         $updateData = [];
-        
+
         if ($request->filled('name')) {
             $updateData['full_name'] = $request->name;
         }
-        
+
         if ($request->filled('email')) {
             $updateData['email'] = $request->email;
         }
-        
+
         if ($request->filled('new_password')) {
             $updateData['password'] = Hash::make($request->new_password);
         }
 
         if (!empty($updateData)) {
             $user->update($updateData);
-            
+
             return response()->json([
                 'message' => 'Account updated successfully'
             ]);

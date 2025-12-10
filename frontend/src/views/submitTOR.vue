@@ -401,11 +401,13 @@ const handleSubmit = async () => {
     }
 
     if (response.success) {
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to show success message
       successMessage.value = response.message || (isEditing.value ? 'TOR berhasil diperbarui!' : 'TOR berhasil dibuat!');
       setTimeout(() => {
         router.push('/app/home');
-      }, 1500);
+      }, 3000);
     } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to show error message
       if (response.errors) {
         errors.value = response.errors;
         errorMessage.value = 'Ada kesalahan pada form. Silakan periksa kembali.';

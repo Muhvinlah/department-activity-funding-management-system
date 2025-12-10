@@ -542,6 +542,7 @@ const approveSubmission = async () => {
 
     if (response.success) {
       // Show success message
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to show success message
       successMessage.value = response.message || 'Pengajuan berhasil disetujui';
       newComment.value = '';
       // Re-fetch LPJ data to show updated status and comments
@@ -549,7 +550,7 @@ const approveSubmission = async () => {
       // Navigate back to home after a brief delay
       setTimeout(() => {
         router.push('/app/home');
-      }, 1500);
+      }, 3000); // 3 seconds - give user time to read the success message
     } else {
       errorMessage.value = response.message || 'Gagal menyetujui pengajuan';
     }
@@ -590,6 +591,7 @@ const rejectSubmission = async () => {
 
     if (response.success) {
       // Show success message
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to show success message
       successMessage.value = response.message || 'Permintaan revisi berhasil dikirim';
       newComment.value = '';
       // Re-fetch LPJ data to show updated status and comments
@@ -597,7 +599,7 @@ const rejectSubmission = async () => {
       // Navigate back to home after a brief delay
       setTimeout(() => {
         router.push('/app/home');
-      }, 1500);
+      }, 3000); // 3 seconds - give user time to read the success message
     } else {
       errorMessage.value = response.message || 'Gagal meminta revisi';
     }

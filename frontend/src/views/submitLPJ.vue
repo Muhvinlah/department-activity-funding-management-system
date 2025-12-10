@@ -455,11 +455,13 @@ const handleSubmit = async () => {
   loading.value = false;
 
   if (response.success) {
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to show success message
     successMessage.value = response.message || (isEditing.value ? 'LPJ berhasil diperbarui!' : 'LPJ berhasil dibuat!');
     setTimeout(() => {
       router.push('/app/home');
-    }, 1500);
+    }, 3000); // 3 seconds - give user time to read the success message
   } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to show error message
     if (response.errors) {
       errors.value = response.errors;
       errorMessage.value = 'Ada kesalahan pada form. Silakan periksa kembali.';

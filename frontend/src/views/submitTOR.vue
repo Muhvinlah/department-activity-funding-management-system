@@ -230,21 +230,7 @@
           </div>
         </div>
 
-        <!-- Comments/Revision Notes Section -->
-        <div class="border-t border-[#F6F5F4] pt-6">
-          <h3 class="text-lg font-semibold text-[#F6F5F4] mb-4">Catatan Tambahan</h3>
-          <div>
-            <label for="comments" class="block text-sm font-medium text-[#F6F5F4] mb-2">
-              Catatan/Keterangan (Opsional)
-            </label>
-            <textarea
-              id="comments"
-              v-model="comments"
-              class="w-full px-4 py-2 bg-[#F6F5F4] border border-[#F6F5F4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 h-20"
-              placeholder="Tambahkan catatan atau informasi penting lainnya"
-            ></textarea>
-          </div>
-        </div>
+
 
         <!-- Submit Button -->
         <div class="flex gap-3 pt-4">
@@ -305,7 +291,7 @@ const attachments = ref<Record<string, File | null>>({
   rab: null,
   supporting: null,
 });
-const comments = ref('');
+
 
 const validateField = (field: keyof TorData) => {
   // Clear previous errors for this field

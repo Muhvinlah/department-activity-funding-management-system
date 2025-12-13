@@ -94,53 +94,10 @@
             </div>
           </div>
 
-          <button 
-            @click="toggleFilters"
-            class="px-4 py-2 bg-[#0d7d90] rounded-xl text-[#f6f5f4] hover:bg-[#3d97a6] focus:outline-none focus:ring-2 focus:ring-[#0d7d90]/25 flex items-center gap-2"
-          >
-            <ion-icon name="filter"></ion-icon>
-            Filter
-          </button>
-
-          <button 
-            @click="exportData"
-            class="px-4 py-2 bg-[#0d7d90] text-[#f6f5f4] rounded-xl hover:bg-[#3d97a6] focus:outline-none focus:ring-2 focus:ring-[#0d7d90]/25 flex items-center gap-2"
-          >
-            <ion-icon name="download-outline"></ion-icon>
-            Export
-          </button>
         </div>
       </div>
 
-      <!-- Additional Filters (Conditional) -->
-      <div v-if="showFilters" class="mb-6 p-4 bg-gray-50 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <select v-model="filters.status" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="under_review">Under Review</option>
-            <option value="needs_revision">Needs Revision</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-          <select v-model="filters.year" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">All Years</option>
-            <option v-for="year in yearOptions" :key="year" :value="year">
-              {{ year }}
-            </option>
-          </select>
-        </div>
-        <div class="flex items-end">
-          <button 
-            @click="clearFilters"
-            class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-          >
-            Clear Filters
-          </button>
-        </div>
-      </div>
+
 
       <!-- Data Table -->
       <div class="overflow-hidden">
@@ -285,15 +242,11 @@ const isLoading = ref(false);
 const perPage = ref(10);
 const currentPage = ref(1);
 const searchQuery = ref('');
-const showFilters = ref(false);
+
 const sortField = ref('submittedAt');
 const sortDirection = ref('desc');
 
-const filters = ref({
-  status: '',
-  department: '',
-  year: ''
-});
+
 
 // Constants
 const tabs = [
@@ -320,7 +273,7 @@ const lpjColumns = [
 ];
 
 const entriesOptions = [10, 25, 50, 100];
-const yearOptions = [2024, 2025, 2026];
+
 
 const currentColumns = computed(() => {
   return activeTab.value === 'tor' ? torColumns : lpjColumns;
@@ -340,19 +293,6 @@ const filteredData = computed(() => {
       item.submitterName.toLowerCase().includes(query) ||
       item.department.toLowerCase().includes(query)
     );
-  }
-  
-  // Apply other filters
-  if (filters.value.status) {
-    filtered = filtered.filter(item => item.status === filters.value.status);
-  }
-  
-  if (filters.value.department) {
-    filtered = filtered.filter(item => item.department === filters.value.department);
-  }
-  
-  if (filters.value.year) {
-    filtered = filtered.filter(item => new Date(item.submittedAt).getFullYear() === parseInt(filters.value.year));
   }
   
   return filtered;
@@ -493,14 +433,7 @@ const sortBy = (field: string) => {
   }
 };
 
-const toggleFilters = () => {
-  showFilters.value = !showFilters.value;
-};
 
-const clearFilters = () => {
-  filters.value = { status: '', department: '', year: '' };
-  searchQuery.value = '';
-};
 
 const previousPage = () => {
   if (currentPage.value > 1) currentPage.value--;
@@ -511,15 +444,10 @@ const nextPage = () => {
 };
 
 const viewSubmission = (submission: Submission) => {
-  console.log('Home: viewSubmission called with:', submission);
   if (submission.type === 'tor') {
-    const path = `/app/approval/tor/${submission.id}`;
-    console.log('Home: Navigating to TOR review page:', path);
-    router.push(path);
+    router.push(`/app/approval/tor/${submission.id}`);
   } else {
-    const path = `/app/approval/lpj/${submission.id}`;
-    console.log('Home: Navigating to LPJ review page:', path);
-    router.push(path);
+    router.push(`/app/approval/lpj/${submission.id}`);
   }
 };
 
@@ -541,46 +469,6 @@ const downloadDocuments = (documents: Document[]) => {
     link.click();
     document.body.removeChild(link);
   });
-};
-
-const exportData = () => {
-  const dataToExport = filteredData.value;
-  const csv = convertToCSV(dataToExport);
-  downloadCSV(csv, `${activeTab.value}_submissions.csv`);
-};
-
-const convertToCSV = (data: any[]) => {
-  if (data.length === 0) return '';
-  
-  const headers = ['Activity Name', 'Submitted By', 'Department', 'Budget', 'Submitted Date', 'Status'];
-  const csvHeaders = headers.join(',');
-  
-  const csvRows = data.map(item => 
-    [
-      `"${item.activityName}"`,
-      `"${item.submitterName}"`,
-      `"${item.department}"`,
-      item.budget,
-      `"${formatDate(item.submittedAt)}"`,
-      `"${formatStatus(item.status)}"`
-    ].join(',')
-  );
-
-  return [csvHeaders, ...csvRows].join('\n');
-};
-
-const downloadCSV = (csv: string, filename: string) => {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  link.style.visibility = 'hidden';
-  
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 };
 
 const getLatestRevisionNote = (approvals: any[]) => {

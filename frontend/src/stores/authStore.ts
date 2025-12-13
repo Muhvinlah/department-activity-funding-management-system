@@ -1,4 +1,3 @@
-import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
 import { login as loginService, logout as logoutService, type LoginCredentials } from '../services/authService'

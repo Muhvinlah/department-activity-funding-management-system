@@ -308,6 +308,34 @@ class dashboardService {
     }
   }
 
+  async getCategories(): Promise<{ success: boolean; data?: any[]; message?: string }> {
+    try {
+      const response = await fetch(`${API_URL}/activity-categories`, {
+        method: 'GET',
+        headers: this.getAuthHeader()
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to fetch categories'
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
   async refreshCache(): Promise<{ success: boolean; message?: string }> {
     try {
       const response = await fetch(`${API_URL}/dashboard/refresh-cache`, {

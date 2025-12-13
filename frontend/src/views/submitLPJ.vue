@@ -10,40 +10,40 @@
         </div>
 
         <!-- Main Content -->
-        <form @submit.prevent="handleSubmit" class="bg-[#0D7D90] rounded-2xl p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <form @submit.prevent="handleSubmit" class="rounded-2xl p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Left Column - TOR Information -->
-            <div class="lg:col-span-1 bg-[#008797]">
-                <div class="rounded-2xl p-6 sticky top-6">
-                    <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4">Informasi TOR</h2>
+            <div class="lg:col-span-1 shadow-lg rounded-2xl bg-[#0D7D90]">
+              <div class="rounded-2xl p-6 sticky top-6">
+                <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4">Informasi TOR</h2>
 
-                    <!-- TOR Selection -->
-                    <div class="mb-6">
-                    <label class="block text-sm font-medium text-[#F6F5F4] mb-2">
-                        Pilih TOR yang Disetujui
-                    </label>
-                    <select 
-                        id="tor_id"
-                        v-model.number="form.tor_id"
-                        @blur="validateField('tor_id')"
-                        @change="validateField('tor_id')"
-                        class="w-full p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
-                    >
-                        <option value="">-- Pilih TOR --</option>
-                        <option 
-                        v-for="tor in approvedTors" 
-                        :key="tor.tor_id" 
-                        :value="tor.tor_id"
-                        >
-                        {{ tor.activity_name }} (Tahun {{ tor.start_date?.split('-')[0] }})
-                        </option>
-                    </select>
-                    <p v-if="errors.tor_id" class="mt-1 text-xs text-red-600">
-                        {{ errors.tor_id[0] }}
-                    </p>
-                    </div>
+                <!-- TOR Selection -->
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                      Pilih TOR yang Disetujui
+                  </label>
+                  <select 
+                      id="tor_id"
+                      v-model.number="form.tor_id"
+                      @blur="validateField('tor_id')"
+                      @change="validateField('tor_id')"
+                      class="w-full p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
+                  >
+                      <option value="">-- Pilih TOR --</option>
+                      <option 
+                      v-for="tor in approvedTors" 
+                      :key="tor.tor_id" 
+                      :value="tor.tor_id"
+                      >
+                      {{ tor.activity_name }} (Tahun {{ tor.start_date?.split('-')[0] }})
+                      </option>
+                  </select>
+                  <p v-if="errors.tor_id" class="mt-1 text-xs text-red-600">
+                      {{ errors.tor_id[0] }}
+                  </p>
+                  </div>
 
-                    <!-- TOR Details -->
-                    <div v-if="selectedTor" class="space-y-4 pt-4 border-t-2 text-[#F6F5F4]">
+                  <!-- TOR Details -->
+                  <div v-if="selectedTor" class="space-y-4 pt-4 border-t-2 text-[#F6F5F4]">
                     <div>
                         <h3 class="text-sm font-medium text-[#F6F5F4]">Nama Kegiatan</h3>
                         <p class="text-sm text-[#F6F5F4]">{{ selectedTor.activity_name }}</p>
@@ -65,114 +65,113 @@
                         <h3 class="text-sm font-medium text-[#F6F5F4]">Peserta Rencana</h3>
                         <p class="text-sm text-[#F6F5F4]">{{ selectedTor.participant }}</p>
                     </div>
-                    </div>
+                  </div>
                 </div>
             </div>
 
             <!-- right column - lpj form -->
             <div class="lg:col-span-2">
-                <!-- Section 1: Hasil Kegiatan -->
-                <div class="mb-8">
-                    <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4 border-b pb-2">
-                        1. Hasil Pelaksanaan Kegiatan
-                    </h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label for="tanggalPelaksanaan" class="block text-sm font-medium text-[#F6F5F4] mb-2">
-                            Tanggal Pelaksanaan Aktual
-                            </label>
-                            <input 
-                            id="actual_date"
-                            type="date"
-                            v-model="form.actual_date"
-                            class="w-full p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
-                            >
-                        </div>
-                        <div>
-                            <label for="deskripsiHasil" class="block text-sm font-medium text-[#F6F5F4] mb-2">
-                                Deskripsi Hasil Kegiatan
-                            </label>
-                            <textarea 
-                            id="activity_result" 
-                            v-model="form.activity_result"
-                            @blur="validateField('activity_result')"
-                            rows="4"
-                            placeholder="Jelaskan secara detail hasil yang dicapai dari kegiatan ini"
-                            class="w-full p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
-                            ></textarea>
-                        </div>
-                    </div>
-                </div>
+              <!-- Section 1: Hasil Kegiatan -->
+              <div class="mb-12 bg-[#0D7D90] rounded-2xl p-6 shadow-lg">
+                  <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4 border-b">
+                      1. Hasil Pelaksanaan Kegiatan
+                  </h2>
+                  
+                  <div class="space-y-4">
+                      <div>
+                          <label for="tanggalPelaksanaan" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                          Tanggal Pelaksanaan Aktual <span class="text-[#D80300]">*</span>
+                          </label>
+                          <input 
+                          id="actual_date"
+                          type="date"
+                          v-model="form.actual_date"
+                          class="w-full p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
+                          >
+                      </div>
+                      <div>
+                          <label for="deskripsiHasil" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                              Deskripsi Hasil Kegiatan <span class="text-[#D80300]">*</span>
+                          </label>
+                          <textarea 
+                          id="activity_result" 
+                          v-model="form.activity_result"
+                          @blur="validateField('activity_result')"
+                          rows="4"
+                          placeholder="Jelaskan secara detail hasil yang dicapai dari kegiatan ini"
+                          class="w-full p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
+                          ></textarea>
+                      </div>
+                  </div>
+              </div>
 
-            <!-- Section 2: Realisasi Anggaran -->
-            <div class="mb-8">
-                <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4 border-b pb-2">
-                    2. Realisasi Anggaran
-                </h2>
-                
-                <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-[#008797] p-4 rounded-xl shadow-lg">
-                        <h3 class="text-sm font-medium text-[#F6F5F4] mb-2">Anggaran Disetujui</h3>
-                        <p class="text-lg font-bold text-[#F6F5F4]" v-if="selectedTor">
-                        Rp {{ selectedTor.budget_submitted?.toLocaleString('id-ID') }}
-                        </p>
-                        <p class="text-sm text-blue-600" v-else>-</p>
-                    </div>
-                
-                    <div>
-                        <label for="realisasiAnggaran" class="block text-sm font-medium text-[#F6F5F4] mb-2">
-                            Realisasi Anggaran
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <span class="text-[#0D7D90]">Rp</span>
-                            </div>
-                            <input 
-                            id="budget_used"
-                            v-model="form.budget_used"
-                            @blur="validateField('budget_used')"
-                            type="number"
-                            min="1"
-                            placeholder="0"
-                            class="w-full pl-12 p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
-                            >
-                        </div>
-                    </div>
-                </div>
+              <!-- Section 2: Realisasi Anggaran -->
+              <div class="mb-12 bg-[#0D7D90] rounded-2xl p-6 shadow-lg">
+                  <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4 border-b">
+                      2. Realisasi Anggaran
+                  </h2>
+                  
+                  <div class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="bg-[#008797] p-4 rounded-xl shadow-lg">
+                          <h3 class="text-sm font-medium text-[#F6F5F4] mb-2">Anggaran Disetujui</h3>
+                          <p class="text-lg font-bold text-[#F6F5F4]" v-if="selectedTor">
+                          Rp {{ selectedTor.budget_submitted?.toLocaleString('id-ID') }}
+                          </p>
+                          <p class="text-sm text-blue-600" v-else>-</p>
+                      </div>
+                  
+                      <div>
+                          <label for="realisasiAnggaran" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                              Realisasi Anggaran <span class="text-[#D80300]">*</span>
+                          </label>
+                          <div class="relative">
+                              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-[#0D7D90]">Rp</span>
+                              </div>
+                              <input 
+                              id="budget_used"
+                              v-model="form.budget_used"
+                              @blur="validateField('budget_used')"
+                              type="number"
+                              min="1"
+                              placeholder="0"
+                              class="w-full pl-12 p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
+                              >
+                          </div>
+                      </div>
+                  </div>
 
-                <div v-if="selectedTor && form.budget_used" class="p-4 rounded-xl shadow-lg bg-[#008797]">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium text-[#F6F5F4]">Selisih Anggaran:</span>
-                        <span 
-                        :class="{
-                            'text-green-600 font-bold': getBudgetDifference() >= 0,
-                            'text-red-600 font-bold': getBudgetDifference() < 0
-                        }"
-                        >
-                            Rp {{ formatCurrency(getBudgetDifference()) }}
-                            ({{ getBudgetDifferencePercentage() }}%)
-                        </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                  <div v-if="selectedTor && form.budget_used" class="p-4 rounded-xl shadow-lg bg-[#008797]">
+                      <div class="flex justify-between items-center">
+                          <span class="text-sm font-medium text-[#F6F5F4]">Selisih Anggaran:</span>
+                          <span 
+                          :class="{
+                              'text-green-600 font-bold': getBudgetDifference() >= 0,
+                              'text-red-600 font-bold': getBudgetDifference() < 0
+                          }"
+                          >
+                              Rp {{ formatCurrency(getBudgetDifference()) }}
+                              ({{ getBudgetDifferencePercentage() }}%)
+                          </span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
 
-            <!-- Section 3: Dokumentasi & Bukti -->
-            <div class="mb-8">
-                <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4 border-b pb-2">
-                3. Dokumentasi & Bukti Pendukung
-                </h2>
-                <div class="space-y-6">
-                    <!-- Foto Kegiatan -->
-                    <div>
-                        <label class="block text-sm font-medium text-[#F6F5F4] mb-2">
-                            Foto Dokumentasi Kegiatan
-                        </label>
+              <!-- Section 3: Dokumentasi & Bukti -->
+              <div class="mb-12 bg-[#0D7D90] rounded-2xl p-6 shadow-lg">
+                  <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4 border-b">
+                  3. Dokumentasi & Bukti Pendukung
+                  </h2>
+                  <div class="space-y-6">
+                      <!-- Foto Kegiatan -->
+                      <div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Foto Dokumentasi (maks 4)</label>
+                            <label class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                              Foto Dokumentasi (maks 4) <span class="text-[#D80300]">*</span>
+                            </label>
                             <input type="file" accept="image/*" multiple @change="handleFileUpload('photos', $event)" class="w-full p-2 text-[#0D7D90] bg-[#F6F5F4] rounded-xl" />
                             <p v-if="attachments.photos && attachments.photos.length" class="mt-2 text-xs text-[#F6F5F4]">{{ attachments.photos.length }} file(s) dipilih</p>
                           </div>
@@ -182,73 +181,78 @@
                             <p v-if="attachments.photos_additional && attachments.photos_additional.length" class="mt-2 text-xs text-[#F6F5F4]">{{ attachments.photos_additional.length }} file(s) dipilih</p>
                           </div>
                         </div>
-                    </div>
+                      </div>
 
-                    <!-- Bukti Pendukung -->
-                    <div>
-                        <label class="block text-sm font-medium text-[#F6F5F4] mb-2">
-                            Dokumen Pendukung
-                        </label>
-                        <div class="space-y-4">
-                        <div>
-                          <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Daftar Hadir Peserta</label>
-                          <input type="file" accept=".pdf,.doc,.docx" @change="handleFileUpload('daftar_hadir', $event)" class="w-full p-2 text-[#0D7D90] bg-[#F6F5F4] rounded-xl" />
-                          <p v-if="attachments.daftar_hadir" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.daftar_hadir.name }}</p>
-                        </div>
-                        <div>
-                          <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Kwitansi & Bukti Pengeluaran</label>
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileUpload('bukti_pengeluaran', $event)" class="w-full p-2 text-[#0D7D90] bg-[#F6F5F4] rounded-xl" />
-                          <p v-if="attachments.bukti_pengeluaran" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.bukti_pengeluaran.name }}</p>
-                        </div>
-                        <div>
-                          <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Dokumen Pendukung Lainnya</label>
-                          <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="handleFileUpload('dokumen_lainnya', $event)" class="w-full p-2 text-[#0D7D90] bg-[#F6F5F4] rounded-xl" />
-                          <p v-if="attachments.dokumen_lainnya" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.dokumen_lainnya.name }}</p>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                      <!-- Bukti Pendukung -->
+                      <div>
+                          <label class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                              Dokumen Pendukung
+                          </label>
+                          <div class="space-y-4">
+                          <div>
+                            <label class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                              Daftar Hadir Peserta <span class="text-[#D80300]">*</span>
+                            </label>
+                            <input type="file" accept=".pdf,.doc,.docx" @change="handleFileUpload('daftar_hadir', $event)" class="w-full p-2 text-[#0D7D90] bg-[#F6F5F4] rounded-xl" />
+                            <p v-if="attachments.daftar_hadir" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.daftar_hadir.name }}</p>
+                          </div>
+                          <div>
+                            <label class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                              Kwitansi & Bukti Pengeluaran <span class="text-[#D80300]">*</span>
+                            </label>
+                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileUpload('bukti_pengeluaran', $event)" class="w-full p-2 text-[#0D7D90] bg-[#F6F5F4] rounded-xl" />
+                            <p v-if="attachments.bukti_pengeluaran" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.bukti_pengeluaran.name }}</p>
+                          </div>
+                          <div>
+                            <label class="block text-sm font-medium text-[#F6F5F4] mb-2">Dokumen Pendukung Lainnya</label>
+                            <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="handleFileUpload('dokumen_lainnya', $event)" class="w-full p-2 text-[#0D7D90] bg-[#F6F5F4] rounded-xl" />
+                            <p v-if="attachments.dokumen_lainnya" class="mt-1 text-xs text-[#F6F5F4]">✓ {{ attachments.dokumen_lainnya.name }}</p>
+                          </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
 
-            <!-- Section 4: Evaluasi & Penutup -->
-            <div class="mb-8">
-                <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4 border-b pb-2">
-                4. Evaluasi & Penutup
-                </h2>
-                
-                <div class="space-y-4">
-                    <div>
-                        <label for="evaluasiKegiatan" class="block text-sm font-medium text-[#F6F5F4] mb-2">
-                        Evaluasi Kegiatan
-                        </label>
-                        <textarea 
-                        id="activity_evaluation"
-                        v-model="form.activity_evaluation"
-                        @blur="validateField('activity_evaluation')"
-                        rows="4"
-                        placeholder="Jelaskan evaluasi terhadap pelaksanaan kegiatan (keberhasilan, kendala, pembelajaran)"
-                        class="w-full p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
-                        ></textarea>
-                    </div>
-                </div>
-            </div>
+              <!-- Section 4: Evaluasi & Penutup -->
+              <div class="mb-4 bg-[#0D7D90] rounded-2xl p-6 shadow-lg">
+                  <h2 class="text-lg font-semibold text-[#F6F5F4] mb-4 border-b">
+                  4. Evaluasi & Penutup
+                  </h2>
+                  
+                  <div class="space-y-4">
+                      <div>
+                          <label for="evaluasiKegiatan" class="block text-sm font-medium text-[#F6F5F4] mb-2">
+                          Evaluasi Kegiatan <span class="text-[#D80300]">*</span>
+                          </label>
+                          <textarea 
+                          id="activity_evaluation"
+                          v-model="form.activity_evaluation"
+                          @blur="validateField('activity_evaluation')"
+                          rows="4"
+                          placeholder="Jelaskan evaluasi terhadap pelaksanaan kegiatan (keberhasilan, kendala, pembelajaran)"
+                          class="w-full p-3 text-[#0D7D90] bg-[#F6F5F4] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F6F5F4]/50 focus:border-transparent"
+                          ></textarea>
+                      </div>
+                  </div>
+              </div>
 
-            <!-- Submit Button -->
-            <div class="flex justify-between space-x-5 pt-6 border-t">
-                <button 
-                type="submit"
-                class="px-8 py-3 text-[#F6F5F4] border border-[#F6F5F4] rounded-xl hover:bg-[#03D26F] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F6F5F4] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <span v-if="!loading">{{ isEditing ? 'Simpan Perubahan' : 'Simpan Pengajuan LPJ' }}</span>
-                    <span v-else>Menyimpan...</span>
-                </button>
-                <router-link
-                to="/app/home"
-                class="flex-1 px-4 py-2 border border-[#F6F5F4] text-[#F6F5F4] rounded-xl hover:bg-[#D80300] hover:text-[#F6F5F4] text-center transition-colors"
-                >
-                Batal
-                </router-link>
-            </div>
+              <!-- Submit Button -->
+              <div class="flex justify-between space-x-5 pt-6">
+                  <button 
+                  type="submit"
+                  class="px-8 py-3 bg-[#0D7D90] text-[#F6F5F4] border border-[#F6F5F4] rounded-xl hover:bg-[#03D26F] transition-colors cursor-pointer"
+                  :disabled="loading"
+                  >
+                      <span v-if="!loading">{{ isEditing ? 'Simpan Perubahan' : 'Simpan Pengajuan LPJ' }}</span>
+                      <span v-else>Menyimpan...</span>
+                  </button>
+                  <router-link
+                  to="/app/home"
+                  class="flex-1 px-4 py-2 border border-[#F6F5F4] bg-[#0D7D90] text-[#F6F5F4] rounded-xl hover:bg-[#D80300] hover:text-[#F6F5F4] text-center transition-colors"
+                  >
+                  Batal
+                  </router-link>
+              </div>
             </div>
         </form>
     </div>

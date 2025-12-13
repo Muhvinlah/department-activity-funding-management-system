@@ -146,6 +146,106 @@
                   Download
                 </button>
               </div>
+              
+              <!-- PDF Viewer for PDF files -->
+              <div v-if="isPDF(file.file_name)" class="mt-4">
+                <div v-if="loadingPdfId === file.attach_id" class="text-center py-8">
+                  <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d7d90]"></div>
+                  <p class="mt-2 text-[#0d7d90]">Loading PDF...</p>
+                </div>
+                
+                <div v-else-if="pdfError[file.attach_id]" class="bg-red-50 border border-red-200 rounded p-4 text-center">
+                  <p class="text-red-600">Failed to load PDF: {{ pdfError[file.attach_id] }}</p>
+                  <button
+                    @click="retryLoadPdf(file)"
+                    class="mt-2 px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm"
+                  >
+                    Retry
+                  </button>
+                </div>
+                
+                <div v-else-if="pdfUrls[file.attach_id]" class="border rounded-lg overflow-hidden">
+                  <!-- PDF Controls -->
+                  <div v-if="showPdfControls && totalPages[file.attach_id] > 1" class="bg-gray-50 p-2 flex items-center justify-between text-sm">
+                    <div class="flex items-center space-x-4">
+                      <button
+                        @click="changePdfPage(file.attach_id, (currentPage[file.attach_id] ?? 1) - 1)"
+                        :disabled="!canGoPrevious(file.attach_id)"
+                        class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ← Previous
+                      </button>
+                      <span class="text-gray-600">
+                        Page {{ currentPage[file.attach_id] ?? 1 }} of {{ totalPages[file.attach_id] ?? 1 }}
+                      </span>
+                      <button
+                        @click="changePdfPage(file.attach_id, (currentPage[file.attach_id] ?? 1) + 1)"
+                        :disabled="!canGoNext(file.attach_id)"
+                        class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next →
+                      </button>
+                    </div>
+                    <div>
+                      <button
+                        @click="openPdfInNewTab(file)"
+                        class="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                      >
+                        Open in New Tab
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- PDF Display -->
+                  <div class="overflow-auto max-h-[500px]">
+                    <VuePdfEmbed
+                      v-if="pdfUrls[file.attach_id] && !pdfError[file.attach_id]"
+                      :source="pdfUrls[file.attach_id]"
+                      :page="currentPage[file.attach_id] ?? 1"
+                      :scale="1"
+                      @rendered="(rendered) => onPdfRendered(rendered, file)"
+                      @error="(error) => onPdfError(error, file)"
+                      @password-requested="(callback) => onPasswordRequested(callback, file)"
+                      @loaded="(pdf) => onPdfLoaded(pdf, file)"
+                      class="mx-auto"
+                    />
+                  </div>
+                </div>
+                
+                <div v-else class="text-center py-4">
+                  <button
+                    @click="loadPdfForViewing(file)"
+                    class="px-4 py-2 bg-[#0d7d90] text-white rounded-lg hover:bg-[#3d97a6]"
+                  >
+                    View PDF
+                  </button>
+                </div>
+              </div>
+
+              <!-- Image Viewer for image files -->
+              <div v-else-if="isImage(file.file_name)" class="mt-4">
+                <div v-if="imageUrls[file.attach_id]" class="border rounded-lg overflow-hidden">
+                  <img 
+                    :src="imageUrls[file.attach_id]" 
+                    :alt="file.file_name"
+                    class="w-full max-h-96 object-contain"
+                  />
+                </div>
+                <div v-else class="text-center py-4">
+                  <button
+                    @click="loadImageForViewing(file)"
+                    class="px-4 py-2 bg-[#0d7d90] text-white rounded-lg hover:bg-[#3d97a6]"
+                  >
+                    View Image
+                  </button>
+                </div>
+              </div>
+
+              <!-- Other file types -->
+              <div v-else class="mt-4 text-center py-4 bg-gray-50 rounded">
+                <p class="text-gray-600">File type: {{ getFileExtension(file.file_name) }}</p>
+                <p class="text-sm text-gray-500 mt-1">Click "Download" to view this file</p>
+              </div>
             </div>
           </div>
           <div v-else class="text-gray-500 text-center py-8">
@@ -182,23 +282,23 @@
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d7d90] h-24"
             ></textarea>
             <p class="text-xs text-gray-500 mt-2">
-              Komentar wajib diisi. Klik "Setujui" atau "Tolak" untuk memproses keputusan Anda.
+              Komentar <strong>wajib diisi</strong> untuk <strong>penolakan</strong>. Untuk persetujuan, komentar bersifat opsional.
             </p>
           </div>
         </div>
 
         <!-- Success Message -->
-      <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
-        <p class="text-green-700 font-medium">✓ {{ successMessage }}</p>
-      </div>
+        <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
+          <p class="text-green-700 font-medium">✓ {{ successMessage }}</p>
+        </div>
 
-      <!-- Error Message -->
-      <div v-if="errorMessage" class="mb-4 p-4 bg-[#D80300] border border-red-200 rounded-lg">
-        <p class="text-[#F6F5F4] font-medium">✗ {{ errorMessage }}</p>
-      </div>
+        <!-- Error Message -->
+        <div v-if="errorMessage" class="mb-4 p-4 bg-[#D80300] border border-red-200 rounded-lg">
+          <p class="text-[#F6F5F4] font-medium">✗ {{ errorMessage }}</p>
+        </div>
 
-      <!-- Action Buttons -->
-      <div class="flex gap-4 pt-4 border-t border-[#F6F5F4]/20">
+        <!-- Action Buttons -->
+        <div class="flex gap-4 pt-4 border-t border-[#F6F5F4]/20">
           <!-- Reviewer Actions -->
           <template v-if="isReviewer">
             <div v-if="tor?.status === 'approved_by_head'" class="w-full bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
@@ -258,11 +358,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import torService from '@/services/torService';
 import { USER_ROLES, ADMIN_ROLES } from '@/constants/userRoles';
+import VuePdfEmbed from 'vue-pdf-embed';
 
 interface TOR {
   tor_id: number;
@@ -279,6 +380,7 @@ interface TOR {
     attach_id: number;
     file_name: string;
     file_path: string;
+    file_size?: number;
   }>;
   approvals?: Array<{
     user?: {
@@ -309,11 +411,21 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const tor = ref<TOR | null>(null);
 const isLoading = ref(false);
 const successMessage = ref('');
-const pdfUrls = ref<Record<number, string>>({});
 const errorMessage = ref('');
 const comments = ref<Comment[]>([]);
 const newComment = ref('');
 const commentStatus = ref('');
+
+// PDF viewing states
+const loadingPdfId = ref<number | null>(null);
+const pdfError = ref<Record<number, string>>({});
+const imageUrls = ref<Record<number, string>>({});
+const pdfUrls = ref<Record<number, string>>({});
+const pdfLoadState = ref<Record<number, 'idle' | 'loading' | 'loaded' | 'error'>>({});
+const currentPage = ref<Record<number, number>>({});
+const totalPages = ref<Record<number, number>>({});
+const showPdfControls = ref(true);
+const isSubmitting = ref(false);
 
 // Check if current user is a reviewer
 const isReviewer = computed(() => {
@@ -328,7 +440,6 @@ const needsRevision = computed(() => {
          tor.value.status === 'needs_revision_by_admin' ||
          tor.value.status === 'needs_revision_by_head';
 });
-const isSubmitting = ref(false);
 
 // Determine initial comment status based on current role
 const getInitialCommentStatus = () => {
@@ -382,18 +493,10 @@ const formatDate = (dateString: string) => {
 // inputted date format
 const formatDateDisplay = (dateString: string) => {
   if (!dateString) return '';
-  const datePart = dateString.split('T')[0]; // Get only the date part before 'T'
+  const datePart = dateString.split('T')[0];
   if (!datePart) return '';
   const [year, month, day] = datePart.split('-');
   return `${day}-${month}-${year}`;
-};
-
-const formatFileSize = (bytes: number) => {
-  if (!bytes || bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 };
 
 const isPDF = (fileName: string) => {
@@ -430,9 +533,125 @@ const formatStatus = (status?: string) => {
   return statusMap[status] || status;
 };
 
-const loadPdf = async (file: any) => {
-  if (pdfUrls.value[file.attach_id]) return;
+const canGoPrevious = (attachId: number) => {
+  const current = currentPage.value[attachId] ?? 1;
+  return current > 1;
+};
 
+const canGoNext = (attachId: number) => {
+  const current = currentPage.value[attachId] ?? 1;
+  const total = totalPages.value[attachId] ?? 1;
+  return current < total;
+};
+
+const changePdfPage = (attachId: number, page: number) => {
+  const current = currentPage.value[attachId] ?? 1;
+  const total = totalPages.value[attachId] ?? 1;
+  if (page >= 1 && page <= total) {
+    currentPage.value[attachId] = page;
+  }
+};
+
+const openPdfInNewTab = (file: any) => {
+  if (pdfUrls.value[file.attach_id]) {
+    window.open(pdfUrls.value[file.attach_id], '_blank');
+  }
+};
+
+const retryLoadPdf = async (file: any) => {
+  pdfError.value[file.attach_id] = '';
+  pdfLoadState.value[file.attach_id] = 'idle';
+  await loadPdfForViewing(file);
+};
+
+// PDF event handlers
+const onPdfLoaded = (pdf: any, file: any) => {
+  console.log('PDF loaded successfully:', file.file_name);
+  const attachId = file.attach_id;
+  
+  // Get total pages from the PDF document
+  if (pdf && pdf.numPages) {
+    totalPages.value[attachId] = pdf.numPages;
+    console.log(`PDF has ${pdf.numPages} pages`);
+  }
+  
+  // Initialize current page if not set
+  if (!currentPage.value[attachId]) {
+    currentPage.value[attachId] = 1;
+  }
+  
+  pdfLoadState.value[attachId] = 'loaded';
+  loadingPdfId.value = null;
+};
+
+const onPdfRendered = (rendered: any, file: any) => {
+  console.log('PDF page rendered:', file.file_name);
+};
+
+const onPdfError = (error: any, file: any) => {
+  console.error('PDF loading error:', error, file.file_name);
+  const attachId = file.attach_id;
+  pdfError.value[attachId] = error.message || 'Failed to load PDF';
+  pdfLoadState.value[attachId] = 'error';
+  loadingPdfId.value = null;
+};
+
+const onPasswordRequested = (callback: (password: string) => void, file: any) => {
+  const password = prompt(`PDF ${file.file_name} is password protected. Enter password:`);
+  if (password) {
+    callback(password);
+  }
+};
+
+// File type helpers
+const isImage = (fileName: string) => {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+  return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
+};
+
+const getFileExtension = (fileName: string) => {
+  return fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+};
+
+const loadPdfForViewing = async (file: any) => {
+  const attachId = file.attach_id;
+  
+  if (pdfUrls.value[attachId]) return;
+  
+  loadingPdfId.value = attachId;
+  pdfError.value[attachId] = '';
+  pdfLoadState.value[attachId] = 'loading';
+  
+  // Initialize default values
+  currentPage.value[attachId] = 1;
+  
+  try {
+    const authStore = useAuthStore();
+    const response = await fetch(`${API_URL}/attachments/download/${attachId}`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    });
+
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      pdfUrls.value[attachId] = url;
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error loading PDF:', error);
+    pdfError.value[attachId] = error instanceof Error ? error.message : 'Unknown error';
+    pdfLoadState.value[attachId] = 'error';
+  } finally {
+    loadingPdfId.value = null;
+  }
+};
+
+const loadImageForViewing = async (file: any) => {
+  if (imageUrls.value[file.attach_id]) return;
+  
   try {
     const authStore = useAuthStore();
     const response = await fetch(`${API_URL}/attachments/download/${file.attach_id}`, {
@@ -443,10 +662,11 @@ const loadPdf = async (file: any) => {
 
     if (response.ok) {
       const blob = await response.blob();
-      pdfUrls.value[file.attach_id] = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob);
+      imageUrls.value[file.attach_id] = url;
     }
   } catch (error) {
-    console.error('Error loading PDF:', error);
+    console.error('Error loading image:', error);
   }
 };
 
@@ -464,10 +684,7 @@ const downloadFile = async (file: any) => {
       return;
     }
 
-    // Get the blob from response
     const blob = await response.blob();
-    
-    // Create download link
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -483,11 +700,7 @@ const downloadFile = async (file: any) => {
 
 const approveSubmission = async () => {
   if (!tor.value) return;
-  if (!newComment.value.trim()) {
-    errorMessage.value = 'Mohon tambahkan komentar sebelum menyetujui';
-    return;
-  }
-
+  
   isSubmitting.value = true;
   errorMessage.value = '';
   successMessage.value = '';
@@ -495,13 +708,24 @@ const approveSubmission = async () => {
     const role = authStore.role;
     let response;
 
-    // Call appropriate API based on role
     if (role === USER_ROLES.SECRETARY) {
-      response = await torService.reviewBySecretary(tor.value.tor_id, 'approved', newComment.value);
+      response = await torService.reviewBySecretary(
+        tor.value.tor_id, 
+        'approved', 
+        newComment.value.trim() || "Disetujui tanpa komentar"
+      );
     } else if (role === USER_ROLES.ADMIN) {
-      response = await torService.verifyByAdmin(tor.value.tor_id, 'approved', newComment.value);
+      response = await torService.verifyByAdmin(
+        tor.value.tor_id, 
+        'approved', 
+        newComment.value.trim() || "Disetujui tanpa komentar"
+      );
     } else if (role === USER_ROLES.HEAD) {
-      response = await torService.approveByHead(tor.value.tor_id, 'approved', newComment.value);
+      response = await torService.approveByHead(
+        tor.value.tor_id, 
+        'approved', 
+        newComment.value.trim() || "Disetujui tanpa komentar"
+      );
     } else {
       errorMessage.value = 'Anda tidak memiliki izin untuk menyetujui pengajuan ini';
       isSubmitting.value = false;
@@ -509,16 +733,13 @@ const approveSubmission = async () => {
     }
 
     if (response.success) {
-      // Show success message
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to show success message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       successMessage.value = response.message || 'Pengajuan berhasil disetujui';
       newComment.value = '';
-      // Re-fetch TOR data to show updated status and comments
       await fetchTOR();
-      // Navigate back to home after a brief delay
       setTimeout(() => {
         router.push('/app/home');
-      }, 3000); // 3 seconds - give user time to read the success message
+      }, 3000);
     } else {
       errorMessage.value = response.message || 'Gagal menyetujui pengajuan';
     }
@@ -533,7 +754,7 @@ const approveSubmission = async () => {
 const rejectSubmission = async () => {
   if (!tor.value) return;
   if (!newComment.value.trim()) {
-    errorMessage.value = 'Mohon tambahkan komentar sebelum menolak';
+    errorMessage.value = 'Mohon tambahkan komentar sebelum menolak atau meminta revisi';
     return;
   }
 
@@ -544,7 +765,6 @@ const rejectSubmission = async () => {
     const role = authStore.role;
     let response;
 
-    // Call appropriate API based on role
     if (role === USER_ROLES.SECRETARY) {
       response = await torService.reviewBySecretary(tor.value.tor_id, 'request_revision', newComment.value);
     } else if (role === USER_ROLES.ADMIN) {
@@ -558,16 +778,13 @@ const rejectSubmission = async () => {
     }
 
     if (response.success) {
-      // Show success message
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to show success message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       successMessage.value = response.message || 'Permintaan revisi berhasil dikirim';
       newComment.value = '';
-      // Re-fetch TOR data to show updated status and comments
       await fetchTOR();
-      // Navigate back to home after a brief delay
       setTimeout(() => {
         router.push('/app/home');
-      }, 3000); // 3 seconds - give user time to read the success message
+      }, 3000);
     } else {
       errorMessage.value = response.message || 'Gagal meminta revisi';
     }
@@ -599,7 +816,6 @@ const fetchComments = () => {
     return;
   }
   
-  // Extract approval records and map them to comments
   comments.value = tor.value.approvals.map((approval: any) => ({
     reviewer_name: approval.user?.full_name || approval.role?.role_name || 'Unknown Reviewer',
     created_at: approval.created_at,
@@ -622,19 +838,15 @@ const fetchTOR = async () => {
     if (response.success && response.data) {
       tor.value = response.data;
       console.log('ReviewTOR: TOR loaded successfully:', tor.value);
-      if (tor.value) {
-        console.log('ReviewTOR: Attachments:', tor.value.attachments);
-        
-        // Load PDFs
-        if (tor.value.attachments) {
-          tor.value.attachments.forEach(file => {
-            if (isPDF(file.file_name)) {
-              loadPdf(file);
-            }
-          });
-        }
+      
+      if (tor.value.attachments) {
+        tor.value.attachments.forEach(file => {
+          if (isPDF(file.file_name)) {
+            pdfLoadState.value[file.attach_id] = 'idle';
+          }
+        });
       }
-      // Fetch comments from the approval records
+      
       fetchComments();
     } else {
       errorMessage.value = response.message || 'Failed to load TOR details';
@@ -648,8 +860,44 @@ const fetchTOR = async () => {
   }
 };
 
+// Clean up blob URLs when component is destroyed
+onUnmounted(() => {
+  Object.values(pdfUrls.value).forEach(url => {
+    if (url.startsWith('blob:')) {
+      window.URL.revokeObjectURL(url);
+    }
+  });
+  
+  Object.values(imageUrls.value).forEach(url => {
+    if (url.startsWith('blob:')) {
+      window.URL.revokeObjectURL(url);
+    }
+  });
+});
+
 onMounted(() => {
   console.log('ReviewTOR: Component mounted');
   fetchTOR();
 });
 </script>
+
+<style scoped>
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Style the PDF embed component */
+:deep(.vue-pdf-embed) {
+  margin: 0 auto;
+}
+
+/* Style PDF pages */
+:deep(.vue-pdf-embed__page) {
+  margin-bottom: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+</style>

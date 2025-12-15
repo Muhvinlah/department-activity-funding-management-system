@@ -1,5 +1,4 @@
 <?php
-// app/Models/ActivityCategory.php
 
 namespace App\Models;
 

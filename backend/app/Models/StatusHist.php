@@ -1,5 +1,4 @@
 <?php
-// app/Models/StatusHist.php
 
 namespace App\Models;
 

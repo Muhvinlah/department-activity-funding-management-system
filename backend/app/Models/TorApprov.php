@@ -1,5 +1,4 @@
 <?php
-// app/Models/TorApprov.php
 
 namespace App\Models;
 

@@ -1,5 +1,4 @@
 <?php
-// app/Events/LpjApproved.php
 
 namespace App\Events;
 

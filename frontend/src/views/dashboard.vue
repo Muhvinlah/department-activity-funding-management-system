@@ -25,7 +25,7 @@
 
       <!-- Error State -->
       <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-        <strong class="font-bold">Error!</strong>
+        <strong class="font-bold">Kesalahan!</strong>
         <span class="block sm:inline"> {{ error }}</span>
       </div>
 
@@ -193,7 +193,7 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
-              Export PDF
+              unduh PDF
             </button>
             <button 
               @click="exportToCSV"
@@ -202,7 +202,7 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Export Excel
+              unduh Excel
             </button>
           </div>
         </div>
@@ -219,7 +219,7 @@
               <Line :data="monthlySubmissionsChartData" :options="lineChartOptions" />
             </div>
             <div v-else class="h-64 flex items-center justify-center text-gray-400">
-              <p>No data available</p>
+              <p>Data tidak tersedia</p>
             </div>
           </div>
 
@@ -315,14 +315,18 @@
                 </div>
               </div>
               
-              <!-- Filter Type -->
+              <!-- Filter Status -->
               <select 
-                v-model="filters.type" 
+                v-model="filters.status" 
                 class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d7d90]"
               >
-                <option value="all">Semua Tipe</option>
-                <option value="TOR">TOR</option>
-                <option value="LPJ">LPJ</option>
+                <option value="all">Semua Status</option>
+                <option value="submitted">Diajukan</option>
+                <option value="reviewed_by_secretary">Ditinjau Sekretaris</option>
+                <option value="verified_by_admin">Diverifikasi Admin</option>
+                <option value="approved_by_head">Disetujui Ketua Jurusan</option>
+                <option value="needs_revision">Perlu Revisi</option>
+                <option value="rejected">Ditolak</option>
               </select>
 
               <!-- Filter Category -->
@@ -407,29 +411,29 @@
                 :disabled="pagination.currentPage === 1"
                 class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                Previous
+                Sebelumnya
               </button>
               <button 
                 @click="pagination.currentPage++" 
                 :disabled="pagination.currentPage >= totalPages"
                 class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                Next
+                Selanjutnya
               </button>
             </div>
             <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div class="flex items-center gap-4">
                 <p class="text-sm text-gray-700">
-                  Showing
+                  Menampilkan
                   <span class="font-medium">{{ startIndex + 1 }}</span>
-                  to
+                  sampai
                   <span class="font-medium">{{ Math.min(endIndex, filteredSubmissions.length) }}</span>
-                  of
+                  dari
                   <span class="font-medium">{{ filteredSubmissions.length }}</span>
-                  results
+                  hasil
                 </p>
                 <div class="flex items-center gap-2">
-                   <span class="text-sm text-gray-700">Show</span>
+                   <span class="text-sm text-gray-700">Tampilkan</span>
                    <select 
                       v-model.number="pagination.itemsPerPage"
                       class="border-gray-300 rounded-md text-sm focus:ring-[#0d7d90] focus:border-[#0d7d90]"
@@ -439,7 +443,7 @@
                       <option :value="25">25</option>
                       <option :value="50">50</option>
                    </select>
-                   <span class="text-sm text-gray-700">entries</span>
+                   <span class="text-sm text-gray-700">data</span>
                 </div>
               </div>
               <div>
@@ -672,7 +676,7 @@ const submissions = ref<SubmissionItem[]>([])
 const categoryList = ref<string[]>([])
 const filters = ref({
   search: '',
-  type: 'all',
+  status: 'all',
   year: 0,
   category: 'all'
 })
@@ -703,8 +707,15 @@ const filteredSubmissions = computed(() => {
                           item.activity_name.toLowerCase().includes(searchTerm) || 
                           item.pic.toLowerCase().includes(searchTerm)
     
-    // 2. Filter Type
-    const matchesType = filters.value.type === 'all' || item.type === filters.value.type
+    // 2. Filter Status
+    let matchesStatus = true
+    if (filters.value.status !== 'all') {
+      if (filters.value.status === 'needs_revision') {
+        matchesStatus = item.status.includes('revision') || item.status.includes('revisi')
+      } else {
+        matchesStatus = item.status === filters.value.status
+      }
+    }
     
     // 3. Filter Year
     const itemYear = new Date(item.date).getFullYear()
@@ -713,7 +724,7 @@ const filteredSubmissions = computed(() => {
     // 4. Filter Category
     const matchesCategory = filters.value.category === 'all' || item.category === filters.value.category
     
-    return matchesSearch && matchesType && matchesYear && matchesCategory
+    return matchesSearch && matchesStatus && matchesYear && matchesCategory
   })
 })
 
@@ -821,10 +832,10 @@ const fetchDashboardStats = async () => {
         lpjDisetujui: data.lpj_statistics['approved_by_head'] || 0
       }
     } else {
-      error.value = response.message || 'Failed to load dashboard data'
+      error.value = response.message || 'Gagal memuat data dashboard'
     }
   } catch (err) {
-    error.value = 'An error occurred while fetching data'
+    error.value = 'Terjadi kesalahan saat memuat data'
     console.error(err)
   } finally {
     loading.value = false
@@ -885,7 +896,7 @@ const fetchSubmissions = async () => {
       type: 'TOR',
       activity_name: item.activity_name,
       pic: item.pic || '-', // Ensure PIC exists
-      category: item.category?.category_def || 'Uncategorized',
+      category: item.category?.category_def || 'tidak ada kategori',
       date: item.created_at,
       amount: item.budget_submitted,
       status: item.status,
@@ -897,9 +908,9 @@ const fetchSubmissions = async () => {
       id_unique: `LPJ-${item.lpj_id}`,
       type: 'LPJ',
       // Access nested TOR data safely
-      activity_name: item.tor?.activity_name || 'Unknown Activity',
+      activity_name: item.tor?.activity_name || 'Kegiatan Tidak Diketahui',
       pic: item.tor?.pic || item.user?.full_name || '-', 
-      category: item.tor?.category?.category_def || 'Uncategorized',
+      category: item.tor?.category?.category_def || 'tidak ada kategori',
       date: item.created_at,
       amount: item.budget_used,
       status: item.status,
@@ -940,13 +951,34 @@ const formatDate = (dateString: string) => {
 }
 
 const formatStatus = (status: string) => {
-  return ucwords(status.replace(/_/g, ' '))
+  if (!status) return '-'
+  
+  const statusMap: Record<string, string> = {
+    'submitted': 'Diajukan',
+    'reviewed_by_secretary': 'Ditinjau Sekretaris',
+    'verified_by_admin': 'Diverifikasi Admin',
+    'approved_by_head': 'Disetujui Ketua Jurusan',
+    'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
+    'needs_revision_by_admin': 'Perlu Revisi (Admin)',
+    'needs_revision_by_head': 'Perlu Revisi (Ketua Jurusan)',
+    'rejected': 'Ditolak'
+  }
+  
+  // Handle generic revision status if present
+  if (status === 'needs_revision') return 'Perlu Revisi'
+  
+  return statusMap[status] || ucwords(status.replace(/_/g, ' '))
 }
 
 const getStatusClass = (status: string) => {
   if (status.includes('approved') || status.includes('disetujui')) return 'bg-green-100 text-green-800'
   if (status.includes('rejected') || status.includes('ditolak')) return 'bg-red-100 text-red-800'
-  if (status.includes('revision') || status.includes('revisi')) return 'bg-yellow-100 text-yellow-800'
+  if (status.includes('revision') || status.includes('revisi')) return 'bg-orange-100 text-orange-800'
+  
+  if (status === 'submitted') return 'bg-blue-100 text-blue-800'
+  if (status === 'reviewed_by_secretary') return 'bg-purple-100 text-purple-800'
+  if (status === 'verified_by_admin') return 'bg-indigo-100 text-indigo-800'
+  
   return 'bg-gray-100 text-gray-800'
 }
 
@@ -1075,7 +1107,7 @@ const torStatusChartData = computed(() => {
   ]
   
   return {
-    labels: torData.map(item => ucwords(item.status.replace(/_/g, ' '))),
+    labels: torData.map(item => formatStatus(item.status)),
     datasets: [
       {
         data: torData.map(item => item.count),
@@ -1102,7 +1134,7 @@ const lpjStatusChartData = computed(() => {
   ]
   
   return {
-    labels: lpjData.map(item => ucwords(item.status.replace(/_/g, ' '))),
+    labels: lpjData.map(item => formatStatus(item.status)),
     datasets: [
       {
         data: lpjData.map(item => item.count),
@@ -1266,12 +1298,12 @@ const exportToCSV = () => {
   }
 
   const headers = [
-    'Type',
-    'Activity Name',
-    'Category',
+    'Tipe',
+    'Nama Kegiatan',
+    'Kategori',
     'PIC',
-    'Date',
-    'Budget',
+    'Tanggal',
+    'Anggaran',
     'Status'
   ]
   

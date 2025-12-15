@@ -318,8 +318,22 @@ const validateField = (field: keyof TorData) => {
 
 const handleFileUpload = (fieldName: string, event: Event) => {
   const input = event.target as HTMLInputElement;
+  const maxFileSize = 25 * 1024 * 1024; // 25 MB
+
   if (input.files && input.files[0]) {
-    attachments.value[fieldName] = input.files[0];
+    const file = input.files[0];
+    
+    if (file.size > maxFileSize) {
+      errorMessage.value = `Ukuran file ${file.name} melebihi batas maksimum 25MB.`;
+      input.value = ''; // Clear the input
+      attachments.value[fieldName] = null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Clear error message if successful
+    errorMessage.value = '';
+    attachments.value[fieldName] = file;
   }
 };
 
@@ -437,9 +451,7 @@ onMounted(async () => {
     // Fallback to empty array
     categories.value = [];
   }
-
-  // Auto-select logic removed - budget_id now assigned by backend
-
+  
   // Check if editing
   if (route.params.id) {
     torId.value = parseInt(route.params.id as string);
@@ -458,7 +470,6 @@ onMounted(async () => {
           budget_submitted: data.budget_submitted,
           pic: data.pic,
           category_id: data.category_id,
-          // budget_id removed - will be auto-assigned by backend if start_date changes
         };
         // Note: Files cannot be pre-populated in file inputs for security reasons
         // We could show existing file names if needed

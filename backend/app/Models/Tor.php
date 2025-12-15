@@ -1,5 +1,4 @@
 <?php
-// app/Models/Tor.php
 
 namespace App\Models;
 

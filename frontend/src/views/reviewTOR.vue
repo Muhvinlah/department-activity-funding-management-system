@@ -19,9 +19,14 @@
         Loading TOR details...
       </div>
 
-      <!-- Error State -->
-      <div v-else-if="errorMessage" class="bg-[#D80300] border border-[#D80300] rounded-lg p-4 mb-4">
-        <p class="text-[#F6F5F4]">✗ {{ errorMessage }}</p>
+      <!-- Success Message -->
+      <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
+        <p class="text-green-700 font-medium">✓ {{ successMessage }}</p>
+      </div>
+
+      <!-- Error Message -->
+      <div v-else-if="errorMessage" class="mb-4 p-4 bg-[#D80300] border border-red-200 rounded-lg">
+        <p class="text-[#F6F5F4] font-medium">✗ {{ errorMessage }}</p>
       </div>
 
       <!-- Main Content -->
@@ -287,15 +292,7 @@
           </div>
         </div>
 
-        <!-- Success Message -->
-        <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
-          <p class="text-green-700 font-medium">✓ {{ successMessage }}</p>
-        </div>
 
-        <!-- Error Message -->
-        <div v-if="errorMessage" class="mb-4 p-4 bg-[#D80300] border border-red-200 rounded-lg">
-          <p class="text-[#F6F5F4] font-medium">✗ {{ errorMessage }}</p>
-        </div>
 
         <!-- Action Buttons -->
         <div class="flex gap-4 pt-4 border-t border-[#F6F5F4]/20">
@@ -521,9 +518,9 @@ const formatStatus = (status?: string) => {
   if (!status) return 'Unknown';
   
   const statusMap: Record<string, string> = {
-    'submitted': 'Ditinjau Sekretaris',
-    'reviewed_by_secretary': 'Diverifikasi Admin',
-    'verified_by_admin': 'Ditinjau Ketua Jurusan',
+    'submitted': 'Diajukan',
+    'reviewed_by_secretary': 'Ditinjau Sekretaris',
+    'verified_by_admin': 'Diverifikasi Admin',
     'approved_by_head': 'Disetujui Ketua Jurusan',
     'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
     'needs_revision_by_admin': 'Perlu Revisi (Admin)',

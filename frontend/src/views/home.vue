@@ -398,9 +398,9 @@ const formatSchedule = (schedule: string) => {
 
 const formatStatus = (status: string) => {
   const statusMap: Record<string, string> = {
-    'submitted': 'Ditinjau Sekretaris',
-    'reviewed_by_secretary': 'Diverifikasi Admin',
-    'verified_by_admin': 'Ditinjau Ketua Jurusan',
+    'submitted': 'Diajukan',
+    'reviewed_by_secretary': 'Ditinjau Sekretaris',
+    'verified_by_admin': 'Diverifikasi Admin',
     'approved_by_head': 'Disetujui Ketua Jurusan',
     'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
     'needs_revision_by_admin': 'Perlu Revisi (Admin)',
@@ -412,14 +412,15 @@ const formatStatus = (status: string) => {
 
 const getStatusClasses = (status: string) => {
   const statusClasses: Record<string, string> = {
-    'submitted': 'bg-[#FACC15]/25 text-[#FACC15]',
-    'reviewed_by_secretary': 'bg-[#FACC15]/25 text-[#FACC15]',
-    'verified_by_admin': 'bg-[#FACC15]/25 text-[#FACC15]',
-    'approved_by_head': 'bg-[#0BC86F]/25 text-[#0BC86F]',
-    'needs_revision_by_secretary': 'bg-[#FF8C00]/25 text-[#FF8C00]',
-    'needs_revision_by_admin': 'bg-[#FF8C00]/25 text-[#FF8C00]',
-    'needs_revision_by_head': 'bg-[#FF8C00]/25 text-[#FF8C00]',
-    'rejected': 'bg-[#D80300]/25 text-[#D80300]'
+    'submitted': 'bg-blue-100 text-blue-800', // Diajukan
+    'reviewed_by_secretary': 'bg-purple-100 text-purple-800', // Ditinjau Sekretaris
+    'verified_by_admin': 'bg-indigo-100 text-indigo-800', // Diverifikasi Admin
+    'approved_by_head': 'bg-green-100 text-green-800', // Disetujui
+    'needs_revision_by_secretary': 'bg-orange-100 text-orange-800', // Perlu Revisi
+    'needs_revision_by_admin': 'bg-orange-100 text-orange-800',
+    'needs_revision_by_head': 'bg-orange-100 text-orange-800',
+    'needs_revision': 'bg-orange-100 text-orange-800',
+    'rejected': 'bg-red-100 text-red-800' // Ditolak
   };
   return statusClasses[status] || 'bg-gray-100 text-gray-800';
 };

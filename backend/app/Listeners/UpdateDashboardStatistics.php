@@ -1,5 +1,4 @@
 <?php
-// app/Listeners/UpdateDashboardStatistics.php
 
 namespace App\Listeners;
 

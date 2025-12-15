@@ -1,5 +1,4 @@
 <?php
-// app/Models/Lpj.php
 
 namespace App\Models;
 

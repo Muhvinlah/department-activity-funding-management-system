@@ -34,15 +34,24 @@
           />
         </div>
         <div class="mb-8">
-          <label for="password" class="block text-sm font-medium text-[#0d7d90] mb-1">Password</label>
-          <input
-            :type="isPasswordVisible ? 'text' : 'password'"
-            id="password"
-            v-model="password"
-            placeholder="Masukkan kata sandi anda"
-            required
-            class="w-full px-4 py-2 border border-[#0d7d90] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008797] focus:border-transparent transition duration-200"
-          />
+          <label for="password" class="block text-sm font-medium text-[#0d7d90] mb-1">Kata Sandi</label>
+          <div class="relative">
+            <input
+              :type="isPasswordVisible ? 'text' : 'password'"
+              id="password"
+              v-model="password"
+              placeholder="Masukkan kata sandi anda"
+              required
+              class="w-full px-4 py-2 pr-10 border border-[#0d7d90] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008797] focus:border-transparent transition duration-200"
+            />
+            <button 
+              type="button" 
+              @click="isPasswordVisible = !isPasswordVisible"
+              class="absolute inset-y-0 right-0 px-3 flex items-center text-[#0d7d90] hover:text-[#008797] focus:outline-none"
+            >
+              <ion-icon :name="isPasswordVisible ? 'eye-off-outline' : 'eye-outline'" size="small"></ion-icon>
+            </button>
+          </div>
         </div>
 
         <div class="mb-4">

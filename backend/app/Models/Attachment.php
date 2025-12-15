@@ -1,5 +1,4 @@
 <?php
-// app/Models/Attachment.php
 
 namespace App\Models;
 
@@ -36,9 +35,7 @@ class Attachment extends Model
         return $this->belongsTo(Lpj::class, 'lpj_id', 'lpj_id');
     }
 
-    /**
-     * Download file
-     */
+    // Download file
     public function download()
     {
         if (Storage::exists($this->file_path)) {
@@ -47,9 +44,7 @@ class Attachment extends Model
         throw new \Exception('File not found');
     }
 
-    /**
-     * Delete file
-     */
+    // Delete file
     public function deleteFile()
     {
         if (Storage::exists($this->file_path)) {

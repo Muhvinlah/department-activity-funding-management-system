@@ -127,6 +127,42 @@ class lpjService {
     }
   }
 
+  async updateLpjWithFiles(id: number, formData: FormData): Promise<LpjResponse> {
+    try {
+      formData.append('_method', 'PUT');
+      
+      const authStore = useAuthStore();
+      const response = await fetch(`${API_URL}/lpj/${id}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${authStore.token}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Failed to update LPJ',
+          errors: result.errors
+        };
+      }
+
+      return {
+        success: true,
+        message: result.message || 'LPJ updated successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Network error occurred'
+      };
+    }
+  }
+
   async getLpj(id: number): Promise<LpjResponse> {
     try {
       const response = await fetch(`${API_URL}/lpj/${id}`, {

@@ -19,9 +19,14 @@
         Loading LPJ details...
       </div>
 
-      <!-- Error State -->
-      <div v-else-if="errorMessage" class="bg-[#D80300] border border-[#D80300] rounded-lg p-4 mb-4">
-        <p class="text-[#F6F5F4]">✗ {{ errorMessage }}</p>
+      <!-- Success Message -->
+      <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
+        <p class="text-green-700 font-medium">✓ {{ successMessage }}</p>
+      </div>
+
+      <!-- Error Message -->
+      <div v-else-if="errorMessage" class="mb-4 p-4 bg-[#D80300] border border-red-200 rounded-lg">
+        <p class="text-[#F6F5F4] font-medium">✗ {{ errorMessage }}</p>
       </div>
 
       <!-- Main Content -->
@@ -84,7 +89,7 @@
               Evaluasi
             </label>
             <textarea
-              :value="lpj.evaluation"
+              :value="lpj.activity_evaluation"
               disabled
               class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 cursor-not-allowed h-24"
             ></textarea>
@@ -182,20 +187,12 @@
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d7d90] h-24"
             ></textarea>
             <p class="text-xs text-gray-500 mt-2">
-              Komentar wajib diisi. Klik "Setujui" atau "Tolak" untuk memproses keputusan Anda.
+              Komentar wajib diisi jika Anda menolak atau meminta revisi. Opsional jika menyetujui.
             </p>
           </div>
         </div>
 
-        <!-- Success Message -->
-      <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
-        <p class="text-green-700 font-medium">✓ {{ successMessage }}</p>
-      </div>
-
-      <!-- Error Message -->
-      <div v-if="errorMessage" class="mb-4 p-4 bg-[#D80300] border border-red-200 rounded-lg">
-        <p class="text-[#F6F5F4] font-medium">✗ {{ errorMessage }}</p>
-      </div>
+  
 
       <!-- Action Buttons -->
       <div class="flex gap-4 pt-4 border-t border-[#F6F5F4]/20">
@@ -263,7 +260,7 @@ interface LPJ {
   tor_id: number;
   activity_result: string;
   actual_date: string;
-  evaluation: string;
+  activity_evaluation: string;
   budget_used: number;
   status: string;
   attachments: Array<{
@@ -430,9 +427,9 @@ const formatStatus = (status?: string) => {
   if (!status) return 'Unknown';
   
   const statusMap: Record<string, string> = {
-    'submitted': 'Ditinjau Sekretaris',
-    'reviewed_by_secretary': 'Diverifikasi Admin',
-    'verified_by_admin': 'Ditinjau Ketua Jurusan',
+    'submitted': 'Diajukan',
+    'reviewed_by_secretary': 'Ditinjau Sekretaris',
+    'verified_by_admin': 'Diverifikasi Admin',
     'approved_by_head': 'Disetujui Ketua Jurusan',
     'needs_revision_by_secretary': 'Perlu Revisi (Sekretaris)',
     'needs_revision_by_admin': 'Perlu Revisi (Admin)',
@@ -515,11 +512,8 @@ const submitComment = async () => {
 
 const approveSubmission = async () => {
   if (!lpj.value) return;
-  if (!newComment.value.trim()) {
-    errorMessage.value = 'Mohon tambahkan komentar sebelum menyetujui';
-    return;
-  }
-
+  // Comment is optional for approval
+  
   isSubmitting.value = true;
   errorMessage.value = '';
   successMessage.value = '';
@@ -529,11 +523,23 @@ const approveSubmission = async () => {
 
     // Call appropriate API based on role
     if (role === USER_ROLES.SECRETARY) {
-      response = await lpjService.reviewBySecretary(lpj.value.lpj_id, 'approved', newComment.value);
+      response = await lpjService.reviewBySecretary(
+        lpj.value.lpj_id, 
+        'approved', 
+        newComment.value.trim() || "Disetujui tanpa komentar"
+      );
     } else if (role === USER_ROLES.ADMIN) {
-      response = await lpjService.verifyByAdmin(lpj.value.lpj_id, 'approved', newComment.value);
+      response = await lpjService.verifyByAdmin(
+        lpj.value.lpj_id, 
+        'approved', 
+        newComment.value.trim() || "Disetujui tanpa komentar"
+      );
     } else if (role === USER_ROLES.HEAD) {
-      response = await lpjService.approveByHead(lpj.value.lpj_id, 'approved', newComment.value);
+      response = await lpjService.approveByHead(
+        lpj.value.lpj_id, 
+        'approved', 
+        newComment.value.trim() || "Disetujui tanpa komentar"
+      );
     } else {
       errorMessage.value = 'Anda tidak memiliki izin untuk menyetujui pengajuan ini';
       isSubmitting.value = false;
@@ -644,7 +650,10 @@ const fetchLPJ = async () => {
     const lpjResponse = await lpjService.getLpj(parseInt(lpjId));
 
     if (lpjResponse.success && lpjResponse.data) {
-      lpj.value = lpjResponse.data;
+      // Handle if data is array (API sometimes returns array of 1)
+      const lpjData = Array.isArray(lpjResponse.data) ? lpjResponse.data[0] : lpjResponse.data;
+      lpj.value = lpjData;
+      
       console.log('ReviewLPJ: LPJ loaded successfully:', lpj.value);
       if (lpj.value) {
         console.log('ReviewLPJ: Attachments:', lpj.value.attachments);

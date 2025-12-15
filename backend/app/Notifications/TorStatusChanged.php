@@ -17,7 +17,7 @@ class TorStatusChanged extends Notification implements ShouldQueue
         public string $oldStatus,
         public string $newStatus,
         public string $actionBy,
-        public ?string $description = null  // ← Tambah parameter ke-5 (optional)
+        public ?string $description = null
     ) {}
 
     public function via(object $notifiable): array
@@ -39,9 +39,6 @@ class TorStatusChanged extends Notification implements ShouldQueue
         if ($this->description) {
             $mail->line("**Catatan:** {$this->description}");
         }
-
-        // $mail->action('Lihat TOR', url("/app/approval/tor/{$this->tor->tor_id}"))
-        //     ->line('Terima kasih telah menggunakan aplikasi ini!');
 
         return $mail;
     }

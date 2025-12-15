@@ -1,5 +1,4 @@
 <?php
-// app/Models/AnnualBudget.php
 
 namespace App\Models;
 
@@ -31,9 +30,7 @@ class AnnualBudget extends Model
         return $this->hasMany(Tor::class, 'budget_id', 'budget_id');
     }
 
-    /**
-     * Get remaining budget
-     */
+    // Get remaining budget
     public function getRemainingBudget()
     {
         // Calculate used budget from approved LPJs (actual spent money)
@@ -46,9 +43,7 @@ class AnnualBudget extends Model
         return $this->budget - $usedBudget;
     }
 
-    /**
-     * Get budget usage percentage
-     */
+    // Get budget usage percentage
     public function getBudgetUsagePercentage()
     {
         // Calculate used budget from approved LPJs (actual spent money)

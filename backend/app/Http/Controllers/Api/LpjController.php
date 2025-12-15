@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\LpjStatusChanged;
+use App\Models\Attachment;
+use Illuminate\Support\Facades\Storage;
 
 class LpjController extends Controller
 {
@@ -21,7 +23,7 @@ class LpjController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Lpj::with(['tor', 'user', 'statusHistories']);
+            $query = Lpj::with(['tor', 'user', 'statusHistories', 'attachments']);
 
             // Filter by status
             if ($request->has('status')) {
@@ -106,7 +108,10 @@ class LpjController extends Controller
                 'current_stage' => 'submitted',
             ]);
 
-        $lpj->addStatusHistory('submitted', 'LPJ submitted', Auth::guard('api')->id());
+            // Handle file uploads
+            $this->handleAttachments($request, $lpj->lpj_id);
+
+            $lpj->addStatusHistory('submitted', 'LPJ submitted', Auth::guard('api')->id());
 
             return response()->json([
                 'success' => true,
@@ -183,6 +188,10 @@ class LpjController extends Controller
 
             $oldStatus = $lpj->status;
             $lpj->update($request->all());
+            
+            // Handle file uploads
+            $this->handleAttachments($request, $lpj->lpj_id);
+            
             $lpj->addStatusHistory('updated', 'LPJ updated', Auth::guard('api')->id());
 
             // If LPJ was in revision, automatically resubmit
@@ -785,4 +794,73 @@ class LpjController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Handle file uploads for LPJ
+     */
+    private function handleAttachments($request, $lpjId)
+    {
+        // Handle photos[]
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $file) {
+                $path = $file->store('lpj/photos', 'public');
+                Attachment::create([
+                    'lpj_id' => $lpjId,
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_type' => 'photo'
+                ]);
+            }
+        }
+
+        // Handle photos_additional[]
+        if ($request->hasFile('photos_additional')) {
+            foreach ($request->file('photos_additional') as $file) {
+                $path = $file->store('lpj/photos_additional', 'public');
+                Attachment::create([
+                    'lpj_id' => $lpjId,
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_type' => 'photo_additional'
+                ]);
+            }
+        }
+
+        // Handle daftar_hadir
+        if ($request->hasFile('daftar_hadir')) {
+            $file = $request->file('daftar_hadir');
+            $path = $file->store('lpj/documents', 'public');
+            Attachment::create([
+                'lpj_id' => $lpjId,
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => 'daftar_hadir'
+            ]);
+        }
+
+        // Handle bukti_pengeluaran
+        if ($request->hasFile('bukti_pengeluaran')) {
+            $file = $request->file('bukti_pengeluaran');
+            $path = $file->store('lpj/documents', 'public');
+            Attachment::create([
+                'lpj_id' => $lpjId,
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => 'bukti_pengeluaran'
+            ]);
+        }
+
+        // Handle dokumen_lainnya
+        if ($request->hasFile('dokumen_lainnya')) {
+            $file = $request->file('dokumen_lainnya');
+            $path = $file->store('lpj/documents', 'public');
+            Attachment::create([
+                'lpj_id' => $lpjId,
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => 'dokumen_lainnya'
+            ]);
+        }
+    }
 }
+

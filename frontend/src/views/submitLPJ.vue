@@ -9,6 +9,17 @@
         </div>
         </div>
 
+        <!-- Success Message -->
+        <div v-if="successMessage" class="mb-4 p-4 bg-[#03D26F] border border-green-200 rounded-lg">
+          <p class="text-green-700 font-medium">✓ {{ successMessage }}</p>
+        </div>
+
+        <!-- Error Message -->
+        <div v-if="errorMessage" class="mb-4 p-4 bg-[#D80300] border border-red-200 rounded-lg">
+          <p class="text-[#F6F5F4] font-medium">✗ {{ errorMessage }}</p>
+        </div>
+
+
         <!-- Main Content -->
         <form @submit.prevent="handleSubmit" class="rounded-2xl p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Left Column - TOR Information -->
@@ -408,23 +419,8 @@ const handleSubmit = async () => {
       if (attachments.value.bukti_pengeluaran) formData.append('bukti_pengeluaran', attachments.value.bukti_pengeluaran as File);
       if (attachments.value.dokumen_lainnya) formData.append('dokumen_lainnya', attachments.value.dokumen_lainnya as File);
 
-      // For update with files, we need to use a workaround since FormData with PUT is tricky
-      formData.append('_method', 'PUT');
-      const authStore = { token: localStorage.getItem('token') };
-      const apiResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/lpj/${lpjId.value}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        },
-        body: formData
-      });
-      const result = await apiResponse.json();
-      response = {
-        success: apiResponse.ok,
-        message: result.message,
-        data: result.data,
-        errors: result.errors
-      };
+      // For update with files, we use the service which handles the POST + _method: PUT logic
+      response = await lpjService.updateLpjWithFiles(lpjId.value, formData);
     } else {
       // No files, just update with JSON
       response = await lpjService.updateLpj(lpjId.value, form.value);
@@ -478,12 +474,59 @@ const handleSubmit = async () => {
 const handleFileUpload = (fieldName: string, event: Event) => {
   const input = event.target as HTMLInputElement;
   if (!input || !input.files) return;
+  
+  const maxFileSize = 25 * 1024 * 1024; // 25 MB
   const key = fieldName as keyof typeof attachments.value;
+  
   if (input.multiple) {
     const files = Array.from(input.files);
+    const validFiles: File[] = [];
+    let hasError = false;
+
+    for (const file of files) {
+      if (file.size > maxFileSize) {
+        errorMessage.value = `File ${file.name} melebihi batas maksimum 25MB.`;
+        hasError = true;
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    if (hasError) {
+      input.value = '';
+       window.scrollTo({ top: 0, behavior: 'smooth' });
+       if (validFiles.length === 0) {
+          // If all failed or mixed, let's just not update the state with the new batch to be safe
+          return;
+       }
+       // If we want to allow partial success, we would update attachments.value[key] = validFiles;
+       // But typically for "multiple" input, users expect "what I selected is what gets uploaded".
+       // Let's clear the input and force re-selection to be safe and clear.
+       (attachments.value as any)[key] = null;
+       return;
+    } 
+    
+    // Check total size if needed? Requirement only mentioned file upload max file size feature. Usually means per file.
+    // Let's sticking to per-file check.
+    
+    // Clear error if success
+    errorMessage.value = '';
     (attachments.value as any)[key] = files;
+
   } else {
-    (attachments.value as any)[key] = input.files[0] ?? null;
+    const file = input.files[0];
+    if (file) {
+        if (file.size > maxFileSize) {
+        errorMessage.value = `File ${file.name} melebihi batas maksimum 25MB.`;
+        input.value = ''; // Clear input
+        (attachments.value as any)[key] = null;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+        }
+        
+        errorMessage.value = '';
+        (attachments.value as any)[key] = file;
+    }
   }
 };
 

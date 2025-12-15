@@ -1,5 +1,4 @@
 <?php
-// app/Models/LpjApprov.php
 
 namespace App\Models;
 

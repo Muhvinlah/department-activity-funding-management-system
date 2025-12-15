@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Api/AnnualBudgetController.php
 
 namespace App\Http\Controllers\Api;
 

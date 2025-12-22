@@ -469,6 +469,8 @@ class LpjController extends Controller
         $validator = Validator::make($request->all(), [
             'action' => 'required|in:approved,rejected,request_revision',
             'catatan' => 'required_if:action,rejected,request_revision|string',
+            // Require nomor_surat if action is approved
+            'nomor_surat' => 'required_if:action,approved|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -501,6 +503,9 @@ class LpjController extends Controller
             $catatan = $request->catatan;
 
             if ($action === 'approved') {
+                // Save reference number
+                $lpj->reference_number = $request->nomor_surat;
+
                 $lpj->verifyByAdmin($user->user_id, $user->role_id, $catatan);
                 $newStatus = 'verified_by_admin';
                 $message = 'LPJ verified by admin';

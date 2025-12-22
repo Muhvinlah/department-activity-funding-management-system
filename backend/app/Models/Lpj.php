@@ -26,6 +26,7 @@ class Lpj extends Model
         'budget_used',
         'status',
         'current_stage',
+        'reference_number',
     ];
 
     protected $casts = [

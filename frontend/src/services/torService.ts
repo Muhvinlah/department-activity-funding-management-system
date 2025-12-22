@@ -312,12 +312,12 @@ class torService {
     }
   }
 
-  async verifyByAdmin(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string): Promise<TorResponse> {
+  async verifyByAdmin(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string, nomorSurat?: string): Promise<TorResponse> {
     try {
       const response = await fetch(`${API_URL}/tor/${id}/verify-admin`, {
         method: 'POST',
         headers: this.getAuthHeader(),
-        body: JSON.stringify({ action, catatan })
+        body: JSON.stringify({ action, catatan, nomor_surat: nomorSurat })
       });
 
       const result = await response.json();

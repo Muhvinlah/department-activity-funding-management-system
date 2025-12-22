@@ -280,6 +280,18 @@
 
           <!-- Add Comment (Only for Reviewers) -->
           <div v-if="isReviewer" class="border-t pt-4">
+            <!-- Nomor Surat (Only for Admin Verification) -->
+            <div v-if="authStore.role === USER_ROLES.ADMIN" class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Surat <span class="text-red-500">*</span></label>
+              <input 
+                v-model="nomorSurat" 
+                type="text" 
+                placeholder="Masukkan Nomor Surat" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d7d90]"
+              >
+              <p class="text-xs text-gray-500 mt-1">Wajib diisi untuk menyetujui pengajuan.</p>
+            </div>
+
             <p class="text-sm font-medium text-gray-700 mb-2">Tambah Komentar & Keputusan</p>
             <textarea
               v-model="newComment"
@@ -411,6 +423,7 @@ const successMessage = ref('');
 const errorMessage = ref('');
 const comments = ref<Comment[]>([]);
 const newComment = ref('');
+const nomorSurat = ref('');
 const commentStatus = ref('');
 
 // PDF viewing states
@@ -712,10 +725,16 @@ const approveSubmission = async () => {
         newComment.value.trim() || "Disetujui tanpa komentar"
       );
     } else if (role === USER_ROLES.ADMIN) {
+      if (!nomorSurat.value.trim()) {
+        errorMessage.value = 'Nomor Surat wajib diisi untuk persetujuan';
+        isSubmitting.value = false;
+        return;
+      }
       response = await torService.verifyByAdmin(
         tor.value.tor_id, 
         'approved', 
-        newComment.value.trim() || "Disetujui tanpa komentar"
+        newComment.value.trim() || "Disetujui tanpa komentar",
+        nomorSurat.value.trim()
       );
     } else if (role === USER_ROLES.HEAD) {
       response = await torService.approveByHead(

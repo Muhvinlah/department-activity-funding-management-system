@@ -505,6 +505,8 @@ class TorController extends Controller
         $validator = Validator::make($request->all(), [
             'action' => 'required|in:approved,rejected,request_revision',
             'catatan' => 'required_if:action,rejected,request_revision|string',
+            // Require nomor_surat if action is approved
+            'nomor_surat' => 'required_if:action,approved|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -539,6 +541,9 @@ class TorController extends Controller
             $catatan = $request->catatan;
 
             if ($action === 'approved') {
+                // Save reference number
+                $tor->reference_number = $request->nomor_surat;
+                
                 $tor->verifyByAdmin($user->user_id, $user->role_id, $catatan);
                 $newStatus = 'verified_by_admin';
                 $message = 'TOR verified by admin';
@@ -561,9 +566,9 @@ class TorController extends Controller
                 $newStatus = 'rejected';
                 $message = 'TOR rejected by admin';
             } else {
-            $tor->requestRevision($user->user_id, $user->role_id, $catatan, $oldStatus);
-            $newStatus = $tor->status; // Get the role-specific revision status
-            $message = 'Revision requested by admin';
+                $tor->requestRevision($user->user_id, $user->role_id, $catatan, $oldStatus);
+                $newStatus = $tor->status; // Get the role-specific revision status
+                $message = 'Revision requested by admin';
             }
 
             // Notify TOR creator about the status change

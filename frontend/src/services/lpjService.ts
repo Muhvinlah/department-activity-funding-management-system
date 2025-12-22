@@ -369,12 +369,12 @@ class lpjService {
     }
   }
 
-  async verifyByAdmin(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string): Promise<LpjResponse> {
+  async verifyByAdmin(id: number, action: 'approved' | 'rejected' | 'request_revision', catatan: string, nomorSurat?: string): Promise<LpjResponse> {
     try {
       const response = await fetch(`${API_URL}/lpj/${id}/verify-admin`, {
         method: 'POST',
         headers: this.getAuthHeader(),
-        body: JSON.stringify({ action, catatan })
+        body: JSON.stringify({ action, catatan, nomor_surat: nomorSurat })
       });
 
       const result = await response.json();

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\AnnualBudgetController;
 use App\Http\Controllers\Api\ActivityCategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\UserController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -49,6 +50,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('annual-budgets', [AnnualBudgetController::class, 'store'])->middleware('role:admin jurusan');
     Route::put('annual-budgets/{id}', [AnnualBudgetController::class, 'update'])->middleware('role:admin jurusan');
     Route::delete('annual-budgets/{id}', [AnnualBudgetController::class, 'destroy'])->middleware('role:admin jurusan');
+
+    // User Management routes (admin only)
+    Route::apiResource('users', UserController::class)->middleware('role:admin jurusan');
 
     // Activity Category routes
     Route::get('activity-categories', [ActivityCategoryController::class, 'index']);

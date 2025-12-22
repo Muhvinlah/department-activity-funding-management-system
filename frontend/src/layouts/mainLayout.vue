@@ -58,6 +58,10 @@
                 class="px-2 py-2 text-[#0d7d90] bg-white rounded-xl font-semibold text-sm md:text-base hover:ring-2 hover:ring-[#F6F5F4]/50">
                 Dashboard
                 </button>
+                <button v-if="canAccessManajemenUser" @click="goToUserManagement"
+                class="px-2 py-2 text-[#0d7d90] bg-white rounded-xl font-semibold text-sm md:text-base hover:ring-2 hover:ring-[#F6F5F4]/50">
+                Manajemen User
+                </button>
             </div>
         </nav>
 
@@ -80,6 +84,10 @@ const username = ref('');
 const canAccessPengajuan = computed(() => {
   const userRole = authStore.role;
   return userRole === 'mahasiswa' || userRole === 'dosen';
+});
+
+const canAccessManajemenUser = computed(() => {
+  return authStore.role === 'admin jurusan';
 });
 
 // Initialize username from auth store
@@ -121,6 +129,11 @@ const goToPengajuan = () => {
 const goToDashboard = () => {
   console.log('Navigating to Dashboard');
   router.push({ name: 'Dashboard' });
+};
+
+const goToUserManagement = () => {
+  console.log('Navigating to User Management');
+  router.push({ name: 'UserManagement' });
 };
 
 const navigateToProfile = () => {

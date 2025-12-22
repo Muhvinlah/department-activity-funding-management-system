@@ -28,7 +28,7 @@
             type="text"
             id="user_id"
             v-model="userId"
-            placeholder="Masukkan NIM Anda (10 digit, contoh: 2207412014)"
+            placeholder="Masukkan NIM Anda"
             required
             class="w-full px-4 py-2 border border-[#0d7d90] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008797] focus:border-transparent transition duration-200"
           />

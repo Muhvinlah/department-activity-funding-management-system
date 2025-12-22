@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('actual_date');
             $table->decimal('budget_used', 15, 2);
             $table->string('status', 50);
-            $table->string('current_stage', 50)->default('under_review');
+            $table->string('current_stage', 50)->default('submitted');
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
             $table->timestamp('deleted_at')->nullable();

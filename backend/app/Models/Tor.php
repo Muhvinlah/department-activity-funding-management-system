@@ -34,6 +34,7 @@ class Tor extends Model
         'category_id',
         'user_id',
         'budget_id',
+        'reference_number',
     ];
 
     protected $casts = [

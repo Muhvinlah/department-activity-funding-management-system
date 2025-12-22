@@ -59,6 +59,12 @@ const routes: Array<RouteRecordRaw> = [
         name: 'ReviewLPJ',
         component: () => import('../views/reviewLPJ.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: 'users',
+        name: 'UserManagement',
+        component: () => import('../views/userManagement.vue'),
+        meta: { requiresAuth: true, roles: ['admin jurusan'] }
       }
     ]
   },

@@ -278,7 +278,6 @@ const form = ref<TorData>({
   budget_submitted: 0,
   pic: '',
   category_id: 0,
-  // budget_id removed - auto-assigned by backend
 });
 
 const errors = ref<Record<string, string[]>>({});
@@ -286,7 +285,6 @@ const loading = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
 const categories = ref<any[]>([]);
-// budgets array removed - no longer needed
 const attachments = ref<Record<string, File | null>>({
   rab: null,
   supporting: null,
@@ -379,23 +377,42 @@ const handleSubmit = async () => {
       // Step 2: Upload files if TOR creation was successful
       if (response.success && response.data) {
         const createdTorId = response.data.tor_id;
+        let uploadFailed = false;
+        let failureMessage = '';
         
-        // Upload RAB file if exists
+        // Upload RAB file (REQUIRED)
         if (attachments.value.rab) {
           const rabUpload = await torService.uploadAttachment(createdTorId, attachments.value.rab, 'rab');
           if (!rabUpload.success) {
             console.error('Failed to upload RAB file:', rabUpload.message);
-            // Continue even if file upload fails
+            uploadFailed = true;
+            failureMessage = `Gagal mengunggah file RAB: ${rabUpload.message || 'File mungkin rusak atau tidak valid'}`;
           }
         }
         
-        // Upload supporting file if exists
-        if (attachments.value.supporting) {
+        // Upload supporting file if exists (OPTIONAL)
+        if (!uploadFailed && attachments.value.supporting) {
           const supportingUpload = await torService.uploadAttachment(createdTorId, attachments.value.supporting, 'supporting');
           if (!supportingUpload.success) {
             console.error('Failed to upload supporting file:', supportingUpload.message);
-            // Continue even if file upload fails
+            // Supporting file is optional, so we just log the error but don't fail
           }
+        }
+        
+        // If file upload failed, delete the TOR and mark submission as failed
+        if (uploadFailed) {
+          try {
+            await torService.deleteTor(createdTorId);
+            console.log('TOR deleted due to file upload failure');
+          } catch (deleteError) {
+            console.error('Failed to delete TOR after upload failure:', deleteError);
+          }
+          
+          // Mark the response as failed
+          response = {
+            success: false,
+            message: failureMessage
+          };
         }
       }
     }

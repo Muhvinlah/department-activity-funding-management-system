@@ -2,47 +2,100 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use SoftDeletes;
+    use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $table = 'users';
+    protected $primaryKey = 'user_id';
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = 'updated_at';
+    const DELETED_AT = 'deleted_at';
+
     protected $fillable = [
-        'name',
+        'user_id',
+        'full_name',
         'email',
         'password',
+        'role_id',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
-        'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
+    ];
+
+    public function getJWTIdentifier()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+
+    // Relationship
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id', 'role_id');
+    }
+
+    public function tors()
+    {
+        return $this->hasMany(Tor::class, 'user_id', 'user_id');
+    }
+
+    public function lpjs()
+    {
+        return $this->hasMany(Lpj::class, 'user_id', 'user_id');
+    }
+
+    // Helper methods
+    public function hasRole($roleNames)
+    {
+        if (is_array($roleNames)) {
+            return in_array($this->role->role_def, $roleNames);
+        }
+        return $this->role->role_def === $roleNames;
+    }
+
+    public function isMahasiswa()
+    {
+        return $this->role->role_def === 'mahasiswa';
+    }
+
+    public function isDosen()
+    {
+        return $this->role->role_def === 'dosen';
+    }
+
+    public function isSekretaris()
+    {
+        return $this->role->role_def === 'sekretaris jurusan';
+    }
+
+    public function isAdmin()
+    {
+        return $this->role->role_def === 'admin jurusan';
+    }
+
+    public function isKetua()
+    {
+        return $this->role->role_def === 'ketua jurusan';
     }
 }

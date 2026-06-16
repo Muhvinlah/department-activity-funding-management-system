@@ -9,37 +9,62 @@ import mainLayout from '@/layouts/mainLayout.vue';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
-    component: () => import('../views/Login.vue'),
+    name: 'Login',
+    component: () => import('../views/login.vue'),
     meta: { requiresAuth: false, guestOnly: true }
   },
   {
     path: '/app',
     component: mainLayout,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true },
     children: [
+      {
+        path: 'account',
+        name: 'AccountSettings',
+        component: () => import('../views/accountProfile.vue'),
+        meta: { requiresAuth: true }
+      },
       {
         path: 'home',
         name: 'Home',
-        component: () => import('../views/Home.vue'),
-        meta: { requiresAuth: false }
+        component: () => import('../views/home.vue'),
+        meta: { requiresAuth: true }
       },
       {
-        path: 'tor',
+        path: 'tor/:id?',
         name: 'TOR',
         component: () => import('../views/submitTOR.vue'),
-        meta: { requiresAuth: false }
+        meta: { requiresAuth: true }
       },
       {
-        path: 'lpj',
+        path: 'lpj/:id?',
         name: 'LPJ',
         component: () => import('../views/submitLPJ.vue'),
-        meta: { requiresAuth: false }
+        meta: { requiresAuth: true }
       },
       {
         path: 'dashboard',
         name: 'Dashboard',
-        component: () => import('../views/Dashboard.vue'),
-        meta: { requiresAuth: false }
+        component: () => import('../views/dashboard.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'approval/tor/:id',
+        name: 'ReviewTOR',
+        component: () => import('../views/reviewTOR.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'approval/lpj/:id',
+        name: 'ReviewLPJ',
+        component: () => import('../views/reviewLPJ.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'users',
+        name: 'UserManagement',
+        component: () => import('../views/userManagement.vue'),
+        meta: { requiresAuth: true, roles: ['admin jurusan'] }
       }
     ]
   },
@@ -50,7 +75,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/:catchAll(.*)',
     name: 'NotFound',
-    component: () => import('../views/NotFound.vue'),
+    component: () => import('../views/notFound.vue'),
   }
 ];
 
@@ -62,7 +87,9 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const isAuthenticated = !!authStore.token;
-  const userRole = authStore.user?.role;
+  const userRole = authStore.role as string | null;
+
+  console.log(`Router: Navigating to ${to.path}, Auth: ${isAuthenticated}, Role: ${userRole}`);
 
   // If route requires auth and user is not authenticated, redirect to login
   if (to.meta?.requiresAuth && !isAuthenticated) {
@@ -72,7 +99,7 @@ router.beforeEach((to, from, next) => {
   // If user is authenticated and tries to access guest-only routes (like login)
   if (to.meta?.guestOnly && isAuthenticated) {
     // Redirect based on role
-    if (ADMIN_ROLES.includes(userRole)) {
+    if (userRole && ADMIN_ROLES.includes(userRole as any)) {
       return next({ name: 'Dashboard' });
     }
     return next({ name: 'Home' });
@@ -80,15 +107,17 @@ router.beforeEach((to, from, next) => {
 
   // Check role-based access
   if (to.meta?.roles && Array.isArray(to.meta.roles)) {
-    if (!userRole || !to.meta.roles.includes(userRole)) {
+    if (!userRole || !to.meta.roles.includes(userRole as any)) {
       // User doesn't have required role
-      if (ADMIN_ROLES.includes(userRole)) {
+      console.warn(`Access denied to ${to.path}. User role: ${userRole}, Required roles: ${to.meta.roles}`);
+      if (userRole && ADMIN_ROLES.includes(userRole as any)) {
         return next({ name: 'Dashboard' });
       }
       return next({ name: 'Home' });
     }
   }
 
+  console.log(`Router: Access granted to ${to.path}`);
   next();
 });
 
